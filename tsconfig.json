@@ -11,7 +11,7 @@
       /* JavaScript Support */
 
       /* Emit */
-      "outDir": "build",
+      "outDir": "dist",
 
       /* Interop Constraints */
       "esModuleInterop": true,

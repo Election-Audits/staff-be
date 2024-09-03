@@ -16,6 +16,7 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
+    "@infisical/sdk": "^2.3.5",
     "cookie-parser": "^1.4.6",
     "debug": "^4.3.6",
     "dotenv": "^16.4.5",
