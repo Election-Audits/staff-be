@@ -2,14 +2,16 @@ import * as mongoose from "mongoose";
 const debug = require('debug')('ea:mongoose');
 debug.log = console.log.bind(console);
 import { BUILD_TYPES } from "shared-lib/constants";
-import { BUILD, INFISICAL_ID, INFISICAL_SECRET, INFISICAL_PROJECT_ID, NODE_ENV } from "../utils/env";
-import { InfisicalClient, LogLevel } from "@infisical/sdk";
+import { BUILD, INFISICAL_ID, INFISICAL_SECRET, INFISICAL_PROJECT_ID, NODE_ENV, 
+    MONGO_LOCAL_CREDS, DBS } from "../utils/env";
+import { InfisicalClient, LogLevel, SecretElement } from "@infisical/sdk";
 
 
 // set connection string depending on whether it's a local or cloud build
 const protocol = (BUILD == BUILD_TYPES.local) ? 'mongodb' : 'mongodb+srv';
 const mongoUrlBase = (BUILD == BUILD_TYPES.local) ? '127.0.0.1:27017' : ''; // TODO: set cloud urls
-let mongoCreds : string; // mongodb credentials
+
+export let databaseConns: {[key: string]: mongoose.Connection}  = {}; // database connections
 
 
 const infisClient = (BUILD == BUILD_TYPES.cloud) ? new InfisicalClient({
@@ -20,37 +22,44 @@ const infisClient = (BUILD == BUILD_TYPES.cloud) ? new InfisicalClient({
 // setup functions to run
 async function setup () {
     // get secrets from Infisical
-    // let res = infisClient?.listSecrets({
-    //     projectId: INFISICAL_PROJECT_ID || '',
-    //     environment: NODE_ENV || ''
-    // });
-    let secretFuncs = [];
-    // get secrets that are only relevant on cloud builds
+    let secretsList: SecretElement[];// | undefined;
+    let secrets: {[key: string]: string} = {}; // store secrets to object keyed by secretKey values
     if (BUILD == BUILD_TYPES.cloud) {
-        secretFuncs.push(infisClient?.getSecret({
+        secretsList = await infisClient?.listSecrets({
             projectId: INFISICAL_PROJECT_ID || '',
-            environment: getInfisicalEnvSlug(NODE_ENV || ''), // TODO dev
-            secretName: 'MONGO_USER'
-        }));
-        secretFuncs.push(infisClient?.getSecret({
-            projectId: INFISICAL_PROJECT_ID || '',
-            environment: getInfisicalEnvSlug(NODE_ENV || ''),
-            secretName: 'MONGO_PASSWORD'
-        }));
+            environment: getInfisicalEnvSlug(NODE_ENV || '')
+        }) || [];
+        // debug('list secrets: ', secretsList);
+        for (let secretEl of secretsList) {
+            secrets[secretEl.secretKey] = secretEl.secretValue;
+        }
+        // debug('secrets: ', secrets);
     }
-    
-    let secrets = await Promise.all(secretFuncs);
-    debug('secrets: ', secrets);
+    const mongoCreds = (BUILD == BUILD_TYPES.local) ? MONGO_LOCAL_CREDS : 
+    `${secrets.MONGO_USER}:${secrets.MONGO_PASSWORD}@`;
+    //const mongoUrl = `${protocol}://${mongoCreds}${mongoUrlBase}`;
+    //await mongoose.connect(mongoUrl);
+    //let mongoClient = mongoose.connection.db;
+    // for each database in DBS, establish a connection
+    let mongoOptions: mongoose.ConnectOptions = {};
+    let dbs = DBS?.split(',') || [];
+    let connectFunctions = [];
+    for (let db of dbs) {
+        let url = `${protocol}://${mongoCreds}${mongoUrlBase}/${db}`;
+        debug('mongo url: ', url);
+        connectFunctions.push(mongoose.createConnection(url));
+    }
+    let connectRets = await Promise.all(connectFunctions);
+    //debug('connectRets: ', connectRets);
+    // save in database connections object
+    for (let ind=0; ind<dbs.length; ind++) {
+        databaseConns[dbs[ind]] = connectRets[ind];
+    }
+    isDbConnected = true; // indicate succesful db connection
 }
 
 setup();
 
-
-// function capitalizeFirstLetter(str: string) : string {
-//     let strOut = str.substring(0,1).toUpperCase() + str.substring(1);
-//     debug('strOut: ', strOut);
-//     return strOut;
-// }
 
 
 /**
@@ -66,4 +75,20 @@ function getInfisicalEnvSlug(environment: string) {
         staging: 'staging'
     };
     return map[environment];
+}
+
+
+let isDbConnected: boolean = false;
+/**
+ * checks if a database connection has been established
+ * @returns a Promise which resolves when database connection is established
+ */
+export function checkDatabaseConnected() : Promise<void> {
+    return new Promise((resolve, reject)=>{
+        let interval = setInterval(()=>{
+            if (!isDbConnected) return;
+            clearInterval(interval);
+            return resolve();
+        }, 1000)
+    });
 }

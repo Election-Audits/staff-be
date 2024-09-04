@@ -11,6 +11,7 @@ export const DBS = process.env.DBS; // mongo dbs to connect to
 export const INFISICAL_ID = process.env.INFISICAL_ID;
 export const INFISICAL_SECRET = process.env.INFISICAL_SECRET;
 export const INFISICAL_PROJECT_ID = process.env.INFISICAL_PROJECT_ID;
+export const MONGO_LOCAL_CREDS = process.env.MONGO_LOCAL_CREDS; // pass Mongo credentials for local build
 
 
 // alert user if environment variables not set

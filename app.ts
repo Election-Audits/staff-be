@@ -8,3 +8,15 @@ debug.log = console.log.bind(console);
 import * as path from "path";
 
 
+
+const app = express();
+const port = process.env.PORT || 3010;
+app.listen(port, ()=>{
+    debug('starting at: ', new Date());
+    console.log(`app is listening on port ${port}`);
+});
+
+// a ping to check if app is running
+app.get('/ping', (req,res,next)=>{
+    res.send("App (staff) is running");
+});
