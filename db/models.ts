@@ -45,8 +45,8 @@ const staffSchema = new Schema({
 
 
 
-
-export let staffModel: unknown;
+// init staffModel to set right type. Will be updated upon db connections in setup
+export let staffModel = mongoose.model("Staff", staffSchema, "Staff");
 
 
 

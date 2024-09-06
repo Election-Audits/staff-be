@@ -71,3 +71,5 @@ const staffSchema = new Schema({
     ],
     emailConfirmed: SchemaTypes.Boolean
 });
+// init staffModel to set right type. Will be updated upon db connections in setup
+exports.staffModel = mongoose.model("Staff", staffSchema, "Staff");
