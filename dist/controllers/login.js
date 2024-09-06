@@ -35,34 +35,25 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const debug = require('debug')('ea:api-login');
+exports.signup = signup;
+const debug = require('debug')("ea:ctrl-login");
 debug.log = console.log.bind(console);
-const express = __importStar(require("express"));
-const models_1 = require("../db/models");
-const misc_1 = require("shared-lib/backend/misc");
-const nodemailer = __importStar(require("nodemailer"));
-const infisical_1 = require("../utils/infisical");
 const constants_1 = require("shared-lib/constants");
 const env_1 = require("../utils/env");
-const multer_1 = __importDefault(require("multer"));
-const bcrypt = __importStar(require("bcrypt"));
+const nodemailer_1 = __importDefault(require("nodemailer"));
+const models_1 = require("../db/models");
 const i18next_1 = __importDefault(require("i18next"));
-require("../utils/misc");
+const bcrypt = __importStar(require("bcrypt"));
+const infisical_1 = require("../utils/infisical");
+require("../utils/misc"); // init i18next
 // ES Module import
 let randomString;
 import('crypto-random-string').then((importRet) => {
     randomString = importRet.default;
 });
-const router = express.Router();
-router.use(express.json());
 // time limit to confirm code for 2FA 
 const verifyWindow = 30 * 60 * 1000; // ms. (30 minutes) 30*60*1000
-// max age of auth cookie
-const cookieMaxAge = 5 * 24 * 3600 * 1000; // max age in milliseconds (5 days)
-const cookieOptions = {
-    httpOnly: true, signed: true, maxAge: cookieMaxAge
-};
-let transporter = nodemailer.createTransport();
+let transporter = nodemailer_1.default.createTransport({});
 let emailUser;
 let emailPassword;
 function setup() {
@@ -73,7 +64,7 @@ function setup() {
         emailUser = (env_1.BUILD == constants_1.BUILD_TYPES.local) ? env_1.EMAIL_USER + '' : ''; // TODO: get from Infisical
         emailPassword = (env_1.BUILD == constants_1.BUILD_TYPES.local) ? env_1.EMAIL_PASSWORD + '' : ''; // TODO
         // create email transporter
-        let transporter = nodemailer.createTransport({
+        transporter = nodemailer_1.default.createTransport({
             host: "mail.privateemail.com", //"smtp.ethereal.email",
             port: 465, //587,
             secure: true, // Use `true` for port 465, `false` for all other ports
@@ -85,28 +76,6 @@ function setup() {
     });
 }
 setup();
-// initialize i18next
-i18next_1.default.init({
-    lng: 'en', // define only when not using language detector
-    debug: true,
-    resources: {}
-});
-/*
-Signup. For signup, an admin needs to create a record consisting of just email
-in the database. This serves as a preapproval to allow only certain people to signup
-*/
-router.post('/signup', 
-// TODO: input check
-(0, multer_1.default)().none(), (req, res, next) => {
-    signup(req, res, next)
-        .then(() => {
-        return res.status(200).end();
-    })
-        .catch((err) => {
-        debug('signup error...');
-        (0, misc_1.endpointError)(err, req, res);
-    });
-});
 function signup(req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
         debug('received request to /signup...');

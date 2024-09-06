@@ -46,7 +46,7 @@ dependencies:
     version: 1.0.9
   shared-lib:
     specifier: github:Election-Audits/shared-lib
-    version: github.com/Election-Audits/shared-lib/2a98b419e97d7047a3941ab8daf22912497590a4
+    version: github.com/Election-Audits/shared-lib/face35b1a28244ec1ded4db1965c211da0975717
 
 devDependencies:
   '@types/bcrypt':
@@ -1462,8 +1462,8 @@ packages:
     resolution: {integrity: sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==}
     dev: false
 
-  github.com/Election-Audits/shared-lib/2a98b419e97d7047a3941ab8daf22912497590a4:
-    resolution: {tarball: https://codeload.github.com/Election-Audits/shared-lib/tar.gz/2a98b419e97d7047a3941ab8daf22912497590a4}
+  github.com/Election-Audits/shared-lib/face35b1a28244ec1ded4db1965c211da0975717:
+    resolution: {tarball: https://codeload.github.com/Election-Audits/shared-lib/tar.gz/face35b1a28244ec1ded4db1965c211da0975717}
     name: shared-lib
     version: 1.0.0
     dependencies:

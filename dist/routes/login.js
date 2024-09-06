@@ -26,18 +26,33 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const i18next_1 = __importDefault(require("i18next"));
-const english = __importStar(require("shared-lib/locales/en.json"));
-// initialize i18next
-i18next_1.default.init({
-    lng: 'en', // define only when not using language detector
-    //debug: true,
-    resources: {
-        en: {
-            translation: english
-        }
-    }
-})
-    .then(() => {
-    console.log('translated: ', i18next_1.default.t('hallo'));
+const debug = require('debug')('ea:api-login');
+debug.log = console.log.bind(console);
+const express = __importStar(require("express"));
+const misc_1 = require("shared-lib/backend/misc");
+const multer_1 = __importDefault(require("multer"));
+const login_1 = require("../controllers/login");
+const router = express.Router();
+exports.default = router;
+router.use(express.json());
+// max age of auth cookie
+const cookieMaxAge = 5 * 24 * 3600 * 1000; // max age in milliseconds (5 days)
+const cookieOptions = {
+    httpOnly: true, signed: true, maxAge: cookieMaxAge
+};
+/*
+Signup. For signup, an admin needs to create a record consisting of just email
+in the database. This serves as a preapproval to allow only certain people to signup
+*/
+router.post('/signup', 
+// TODO: input check
+(0, multer_1.default)().none(), (req, res, next) => {
+    (0, login_1.signup)(req, res, next)
+        .then(() => {
+        return res.status(200).end();
+    })
+        .catch((err) => {
+        debug('signup error...');
+        (0, misc_1.endpointError)(err, req, res);
+    });
 });

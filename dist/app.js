@@ -27,14 +27,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
+const path = __importStar(require("path"));
 // NB: can set DOTENV_CONFIG_PATH env, otherwise defaults to ./envs/.env
 (_a = process.env).DOTENV_CONFIG_PATH || (_a.DOTENV_CONFIG_PATH = path.join(__dirname, "envs", ".env"));
 require("dotenv/config");
 const express_1 = __importDefault(require("express"));
 const debug = require('debug')('ea:app');
 debug.log = console.log.bind(console);
-const path = __importStar(require("path"));
-require("./db/models"); // /mongoose TODO remove
+const login_1 = __importDefault(require("./routes/login"));
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3010;
 app.listen(port, () => {
@@ -45,3 +45,5 @@ app.listen(port, () => {
 app.get('/ping', (req, res, next) => {
     res.send("App (staff) is running");
 });
+// mount routers
+app.use("/", login_1.default);
