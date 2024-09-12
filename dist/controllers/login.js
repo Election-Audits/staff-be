@@ -36,6 +36,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.signup = signup;
+exports.signupConfirm = signupConfirm;
+exports.login = login;
+exports.loginConfirm = loginConfirm;
 const debug = require('debug')("ea:ctrl-login");
 debug.log = console.log.bind(console);
 const constants_1 = require("shared-lib/constants");
@@ -46,13 +49,19 @@ const i18next_1 = __importDefault(require("i18next"));
 const bcrypt = __importStar(require("bcrypt"));
 const infisical_1 = require("../utils/infisical");
 require("../utils/misc"); // init i18next
+const joi_1 = require("../utils/joi");
 // ES Module import
 let randomString;
 import('crypto-random-string').then((importRet) => {
     randomString = importRet.default;
 });
 // time limit to confirm code for 2FA 
-const verifyWindow = 30 * 60 * 1000; // ms. (30 minutes) 30*60*1000
+const verifyWindow = 60 * 1000; // ms. (30 minutes) 30*60*1000 TODO
+// max age of auth cookie
+const cookieMaxAge = 5 * 24 * 3600 * 1000; // max age in milliseconds (5 days)
+const cookieOptions = {
+    httpOnly: true, signed: true, maxAge: cookieMaxAge
+};
 let transporter = nodemailer_1.default.createTransport({});
 let emailUser;
 let emailPassword;
@@ -76,30 +85,41 @@ function setup() {
     });
 }
 setup();
+/**
+ * Signup controller
+ * @param req
+ * @param res
+ * @param next
+ * @returns
+ */
 function signup(req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
         debug('received request to /signup...');
         let body = Object.assign({}, req.body);
+        // validate inputs with joi
+        let { error } = yield joi_1.signupSchema.validateAsync(body);
+        if (error) {
+            debug('schema error: ', error);
+            return Promise.reject({ errMsg: i18next_1.default.t("request_body_error") }); // todo printf
+        }
         let email = body.email;
         debug('email: ', email);
         // First try to get record from db to check pre-approval
         let record = yield models_1.staffModel.findOne({ email }, { password: 0 });
         debug('record: ', record);
-        let errMsg = i18next_1.default.t("not_approved_signup");
-        debug('translated message: ', errMsg);
         if (!record)
-            return Promise.reject({ errMsg: i18next_1.default.t("not_approved_signup") });
+            return Promise.reject({ errMsg: i18next_1.default.t("not_approved_signup") }); // , {lng}
         // if email already confirmed, user has already signed up
         if (record.emailConfirmed)
-            return Promise.reject({ errMsg: i18next_1.default });
+            return Promise.reject({ errMsg: i18next_1.default.t("account_exists") });
         // Update record with body fields, then send confirmation email
         delete body.email; // not updating email
         body.password = yield bcrypt.hash(body.password, 12); // hash password
         // create a code to be sent by email
-        let code = randomString({ length: 8 });
+        let code = randomString({ length: 12 });
         let emailCodes_0 = record.emailCodes || [];
         let emailCodes = [...emailCodes_0, { code, createdAtms: Date.now() }];
-        // filter out emailCodes that are too old
+        // remove emailCodes that are too old
         emailCodes = emailCodes.filter((x) => {
             let codeAge = Date.now() - x.createdAtms;
             return codeAge < 2 * verifyWindow;
@@ -115,7 +135,7 @@ function signup(req, res, next) {
             from: emailUser, // sender address
             to: email, // list of receivers
             subject: "OTP", // Subject line
-            text: `Hello, use the following code to complete signup: ${code}`, // plain text body
+            text: i18next_1.default.t("otp_message") + code, // plain text body
             // html: "<b>OTP for signup</b>", // html body
         });
         // debug('email sent. info ret: ', info);
@@ -124,5 +144,137 @@ function signup(req, res, next) {
             debug('email error');
             return Promise.reject(info);
         }
+    });
+}
+/**
+ * Signup confirm. Use the code sent by email to complete signup
+ * @param req
+ * @param res
+ * @param next
+ * @returns
+ */
+function signupConfirm(req, res, next) {
+    return __awaiter(this, void 0, void 0, function* () {
+        debug('received request to /signup/confirm...');
+        let body = req.body;
+        let email = body.email;
+        debug('body: ', body);
+        // validate inputs with joi
+        let { error } = yield joi_1.signupConfirmSchema.validateAsync(body);
+        if (error) {
+            debug('schema error: ', error);
+            return Promise.reject({ errMsg: i18next_1.default.t("request_body_error") }); // todo printf
+        }
+        // first get record from db
+        let record = yield models_1.staffModel.findOne({ email });
+        debug('record: ', record);
+        // check if account already exists
+        if (record === null || record === void 0 ? void 0 : record.emailConfirmed)
+            return Promise.reject({ errMsg: i18next_1.default.t("account_exists") });
+        // search emailCodes array for a code that matches
+        let dbCodes = (record === null || record === void 0 ? void 0 : record.emailCodes) || []; // {code: 0}
+        let ind = dbCodes.findIndex((codeObj) => codeObj.code == body.code);
+        if (ind == -1)
+            return Promise.reject({ errMsg: i18next_1.default.t("wrong_code") });
+        // Ensure that the code has not expired
+        let codeCreatedAt = (record === null || record === void 0 ? void 0 : record.emailCodes[ind].createdAtms) || 0; // dbCodes
+        let deltaT = Date.now() - codeCreatedAt;
+        if (deltaT > verifyWindow) {
+            debug(`code has expired: deltaT is ${deltaT / 1000} seconds`);
+            return Promise.reject({ errMsg: i18next_1.default.t("expired_code") });
+        }
+        // At this point, code is equal, and within verification window. Update record
+        let update = { $set: { emailConfirmed: true }, $unset: { emailCodes: 1 } };
+        yield models_1.staffModel.updateOne({ email }, update);
+        // set cookie for authenticating future requests
+        res.cookie('staff', email, cookieOptions);
+    });
+}
+/**
+ *
+ * @param req
+ * @param res
+ * @param next
+ * @returns
+ */
+function login(req, res, next) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let body = req.body;
+        let email = body.email;
+        debug('email: ', email);
+        // validate inputs with joi
+        let { error } = yield joi_1.loginSchema.validateAsync(body);
+        if (error) {
+            debug('schema error: ', error);
+            return Promise.reject({ errMsg: i18next_1.default.t("request_body_error") }); // todo printf
+        }
+        let record = yield models_1.staffModel.findOne({ email });
+        debug('record: ', record);
+        // Ensure user account exists
+        if (!record || !record.emailConfirmed) {
+            return Promise.reject({ errMsg: i18next_1.default.t("account_not_exist") });
+        }
+        // check if password is equal
+        let pwdEqual = yield bcrypt.compare('' + body.password, record.password + '');
+        if (!pwdEqual)
+            return Promise.reject({ errMsg: i18next_1.default.t("wrong_email_password") });
+        // Account exists and password correct. Create OTP to be sent by email
+        let code = randomString({ length: 8 });
+        let emailCodes_0 = record.emailCodes || [];
+        let emailCodes = [...emailCodes_0, { code, createdAtms: Date.now() }];
+        // remove emailCodes that are too old
+        emailCodes = emailCodes.filter((x) => {
+            let codeAge = Date.now() - (x.createdAtms || 0);
+            return codeAge < 2 * verifyWindow;
+        });
+        body.emailCodes = emailCodes;
+        let update = { $set: { emailCodes } };
+        yield models_1.staffModel.updateOne({ email }, update);
+        debug(`code: ${code}`);
+        if (env_1.BUILD == constants_1.BUILD_TYPES.local)
+            return;
+        // send email if running on cloud
+        debug('running on cloud, will send email');
+        const info = yield transporter.sendMail({
+            from: emailUser, // sender address
+            to: email, // list of receivers
+            subject: "OTP", // Subject line
+            text: i18next_1.default.t("otp_message") + code, // plain text body
+            // html: "<b>OTP for signup</b>", // html body
+        });
+        // debug('email sent. info ret: ', info); 
+        // {accepted: ['<email>'], rejected: [], response: '',...}
+        if (info.rejected.length > 0) { // email error
+            debug('email error');
+            return Promise.reject(info);
+        }
+    });
+}
+function loginConfirm(req, res, next) {
+    return __awaiter(this, void 0, void 0, function* () {
+        debug('body: ', req.body);
+        let body = req.body;
+        let email = body.email;
+        // validate inputs with joi
+        let { error } = yield joi_1.loginConfirmSchema.validateAsync(body);
+        if (error) {
+            debug('schema error: ', error);
+            return Promise.reject({ errMsg: i18next_1.default.t("request_body_error") }); // todo printf
+        }
+        let record = yield models_1.staffModel.findOne({ email });
+        // search emailCodes array for a code that matches
+        let dbCodes = (record === null || record === void 0 ? void 0 : record.emailCodes) || [];
+        let ind = dbCodes.findIndex((codeObj) => codeObj.code == body.code);
+        if (ind == -1)
+            return Promise.reject({ errMsg: i18next_1.default.t("wrong_code") });
+        //assertNumber(ind);
+        let codeCreatedAt = record === null || record === void 0 ? void 0 : record.emailCodes[ind].createdAtms; // ind
+        let deltaT = Date.now() - (codeCreatedAt || 0);
+        if (deltaT > verifyWindow) {
+            debug(`code has expired: deltaT is ${deltaT / 1000} seconds`);
+            return Promise.reject({ errMsg: i18next_1.default.t("expired_code") });
+        }
+        // set cookie for authenticating future requests
+        res.cookie('staff', email, cookieOptions);
     });
 }

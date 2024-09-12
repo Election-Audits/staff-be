@@ -37,7 +37,5 @@ i18next_1.default.init({
             translation: english
         }
     }
-})
-    .then(() => {
-    console.log('translated: ', i18next_1.default.t('hallo'));
 });
+//.then(()=>{});

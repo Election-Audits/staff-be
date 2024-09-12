@@ -11,8 +11,6 @@ i18next.init({
             translation: english
         }
     }
-})
-.then(()=>{
-    console.log('translated: ', i18next.t('hallo'));
 });
+//.then(()=>{});
 

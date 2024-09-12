@@ -35,24 +35,50 @@ const login_1 = require("../controllers/login");
 const router = express.Router();
 exports.default = router;
 router.use(express.json());
-// max age of auth cookie
-const cookieMaxAge = 5 * 24 * 3600 * 1000; // max age in milliseconds (5 days)
-const cookieOptions = {
-    httpOnly: true, signed: true, maxAge: cookieMaxAge
-};
 /*
 Signup. For signup, an admin needs to create a record consisting of just email
 in the database. This serves as a preapproval to allow only certain people to signup
 */
-router.post('/signup', 
-// TODO: input check
-(0, multer_1.default)().none(), (req, res, next) => {
+router.post('/signup', (0, multer_1.default)().none(), (req, res, next) => {
     (0, login_1.signup)(req, res, next)
         .then(() => {
         return res.status(200).end();
     })
         .catch((err) => {
         debug('signup error...');
+        (0, misc_1.endpointError)(err, req, res);
+    });
+});
+/*
+Signup confirm. enter the one time passcode to prove ownership of email address and
+account creation
+*/
+router.put('/signup/confirm', (req, res, next) => {
+    (0, login_1.signupConfirm)(req, res, next)
+        .then(() => {
+        return res.status(200).end();
+    })
+        .catch((err) => {
+        (0, misc_1.endpointError)(err, req, res);
+    });
+});
+/*
+*/
+router.put('/login', (0, multer_1.default)().none(), (req, res, next) => {
+    (0, login_1.login)(req, res, next)
+        .then(() => {
+        return res.status(200).end();
+    })
+        .catch((err) => {
+        (0, misc_1.endpointError)(err, req, res);
+    });
+});
+router.put('/login/confirm', (req, res, next) => {
+    (0, login_1.loginConfirm)(req, res, next)
+        .then(() => {
+        return res.status(200).end();
+    })
+        .catch((err) => {
         (0, misc_1.endpointError)(err, req, res);
     });
 });
