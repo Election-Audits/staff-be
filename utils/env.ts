@@ -16,6 +16,7 @@ export const MONGO_LOCAL_CREDS = process.env.MONGO_LOCAL_CREDS; // pass Mongo cr
 // environment variables set in local build
 export const EMAIL_USER = process.env.EMAIL_USER;
 export const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD;
+export const COOKIE_SECRET = process.env.COOKIE_SECRET;
 
 
 // alert user if environment variables not set

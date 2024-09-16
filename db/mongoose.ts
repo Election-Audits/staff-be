@@ -5,12 +5,14 @@ import { BUILD_TYPES } from "shared-lib/constants";
 import { BUILD, INFISICAL_ID, INFISICAL_SECRET, INFISICAL_PROJECT_ID, NODE_ENV, 
     MONGO_LOCAL_CREDS, DBS } from "../utils/env";
 import { InfisicalClient, LogLevel, SecretElement } from "@infisical/sdk";
+import { auditDbName } from "../utils/misc";
 
 
 // set connection string depending on whether it's a local or cloud build
 const protocol = (BUILD == BUILD_TYPES.local) ? 'mongodb' : 'mongodb+srv';
 const mongoUrlBase = (BUILD == BUILD_TYPES.local) ? '127.0.0.1:27017' : ''; // TODO: set cloud urls
 
+export let eAuditMongoUrl = ''; // general 'eaudit' db assign in setup
 export let databaseConns: {[key: string]: mongoose.Connection}  = {}; // database connections
 
 
@@ -37,9 +39,7 @@ async function setup () {
     }
     const mongoCreds = (BUILD == BUILD_TYPES.local) ? MONGO_LOCAL_CREDS : 
     `${secrets.MONGO_USER}:${secrets.MONGO_PASSWORD}@`;
-    //const mongoUrl = `${protocol}://${mongoCreds}${mongoUrlBase}`;
-    //await mongoose.connect(mongoUrl);
-    //let mongoClient = mongoose.connection.db;
+    eAuditMongoUrl = `${protocol}://${mongoCreds}${mongoUrlBase}/${auditDbName}`;
     // for each database in DBS, establish a connection
     let mongoOptions: mongoose.ConnectOptions = {};
     let dbs = DBS?.split(',') || [];
@@ -89,6 +89,6 @@ export function checkDatabaseConnected() : Promise<void> {
             if (!isDbConnected) return;
             clearInterval(interval);
             return resolve();
-        }, 1000)
+        }, 1000);
     });
 }

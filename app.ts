@@ -6,6 +6,8 @@ import "dotenv/config";
 import express from "express";
 const debug = require('debug')('ea:app');
 debug.log = console.log.bind(console);
+import "./auth"; // passport setup
+
 
 import loginRouter from "./routes/login";
 
