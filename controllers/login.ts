@@ -8,9 +8,9 @@ import { staffModel } from "../db/models";
 import i18next from "i18next";
 import * as bcrypt from "bcrypt";
 import { secrets ,checkSecretsReturned } from "../utils/infisical";
-import "../utils/misc"; // init i18next
+import { staffCookieMaxAge } from "../utils/misc"; // init i18next
 import { signupSchema, signupConfirmSchema, loginSchema, loginConfirmSchema } from "../utils/joi";
-import { getJoiError } from "shared-lib/backend/misc";
+// import { getJoiError } from "shared-lib/backend/misc";
 
 
 // ES Module import
@@ -23,11 +23,8 @@ import('crypto-random-string').then((importRet)=>{
 // time limit to confirm code for 2FA 
 const verifyWindow = 30*60*1000; // ms. (30 minutes) 30*60*1000
 
-// max age of auth cookie
-const cookieMaxAge = 5*24*3600*1000; // max age in milliseconds (5 days)
-
 const cookieOptions = {
-    httpOnly: true, signed: true, maxAge: cookieMaxAge
+    httpOnly: true, signed: true, maxAge: staffCookieMaxAge
 };
 
 
@@ -150,7 +147,7 @@ export async function signupConfirm(req: express.Request, res: express.Response,
     let update = {$set: {emailConfirmed: true}, $unset: {emailCodes: 1}};
     await staffModel.updateOne({email}, update);
     // set cookie for authenticating future requests
-    res.cookie('staff', email, cookieOptions);
+    req.session.email = email;
 }
 
 
@@ -213,7 +210,7 @@ export async function login(req: express.Request, res: express.Response, next: e
 
 
 export async function loginConfirm(req: express.Request, res: express.Response, next: express.NextFunction) {
-    debug('body: ', req.body);
+    debug('received request to /login/confirm...'); //debug('body: ', req.body);
     let body = req.body;
     let email = body.email;
     // validate inputs with joi
@@ -235,5 +232,6 @@ export async function loginConfirm(req: express.Request, res: express.Response, 
         return Promise.reject({errMsg: i18next.t("expired_code")});
     }
     // set cookie for authenticating future requests
-    res.cookie('staff', email, cookieOptions);
+    debug('about to set session email: ', email);
+    //req.session.email = email;
 }

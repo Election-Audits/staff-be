@@ -12,7 +12,7 @@ import { signup, signupConfirm, login, loginConfirm } from "../controllers/login
 import passport from "passport";
 import i18next from "i18next";
 import cookieParser from "cookie-parser";
-//import { staffSession } from "../utils/session";
+import { staffSession } from "../utils/session";
 
 
 
@@ -62,6 +62,7 @@ Signup confirm. enter the one time passcode to prove ownership of email address 
 account creation
 */
 router.put('/signup/confirm',
+staffSession,
 (req,res,next)=>{
     signupConfirm(req,res,next)
     .then(()=>{
@@ -90,9 +91,14 @@ multer().none(),
 
 
 router.put('/login/confirm',
+//staffSession,
+(req,res,next)=>{
+    staffSession(req,res,next);
+},
 (req,res,next)=>{
     loginConfirm(req,res,next)
     .then(()=>{
+        // req.session.email = req.body.email;
         return res.status(200).end();
     })
     .catch((err)=>{
@@ -103,7 +109,7 @@ router.put('/login/confirm',
 
 /* Logout */
 router.put('/logout',
-// staffSession, TODO
+staffSession,
 (req,res,next)=>{
     debug('received request to /logout...');
     passport.authenticate('staff-cookie', (err: any, user: unknown, failInfo: unknown)=>{
