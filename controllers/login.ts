@@ -168,7 +168,7 @@ export async function login(req: express.Request, res: express.Response, next: e
         return Promise.reject({errMsg: i18next.t("request_body_error")}); // todo printf
     }
     let record = await staffModel.findOne({email});
-    debug('record: ', record);
+    debug('record: ', JSON.stringify(record));
     // Ensure user account exists
     if (!record || !record.emailConfirmed) {
         return Promise.reject({errMsg: i18next.t("account_not_exist")});
@@ -232,6 +232,5 @@ export async function loginConfirm(req: express.Request, res: express.Response, 
         return Promise.reject({errMsg: i18next.t("expired_code")});
     }
     // set cookie for authenticating future requests
-    debug('about to set session email: ', email);
-    //req.session.email = email;
+    req.session.email = email;
 }
