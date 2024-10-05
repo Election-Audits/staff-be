@@ -10,6 +10,7 @@ import "./auth"; // passport setup
 
 
 import loginRouter from "./routes/login";
+import adminRouter from "./routes/admin";
 
 
 const app = express();
@@ -27,3 +28,15 @@ app.get('/ping', (req,res,next)=>{
 
 // mount routers
 app.use("/", loginRouter);
+app.use("/", adminRouter);
+
+
+// TODO: 400 handler
+
+
+app.use((err: RequestError,req: express.Request, res: express.Response, next: express.NextFunction)=>{
+    debug('error handler. err: ', err);
+    let status = err?.errMsg ? 400 : 500;
+    let body = err?.errMsg || 'Internal Server Error';
+    return res.status(status).send(body);
+});
