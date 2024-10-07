@@ -1,3 +1,5 @@
+'use strict';
+
 // Mongoose Models
 
 import * as mongoose from "mongoose";
@@ -19,8 +21,7 @@ async function setup() {
         
     }
     // now setup eaudit database for staff app
-    staffModel = databaseConns.eaudit.model<StaffDocument, mongoose.PaginateModel<StaffDocument> >
-    ("Staff", staffSchema, "Staff")
+    staffModel = databaseConns.eaudit.model("Staff", staffSchema, "Staff")
 }
 setup();
 
@@ -58,36 +59,11 @@ const staffSchema = new Schema({
 });
 
 
-/////////////////
-interface StaffData {
-    surname: string,
-    otherNames: string,
-    email: string,
-    phone: string,
-    password: string,
-    emailCodes: [
-        { code: string, createdAtms: number }
-    ],
-    emailConfirmed: boolean,
-    roles: {
-        dataEntry: boolean,
-        dataApproval: boolean,
-        dataMaster: boolean
-    },
-    scope: {}
-}
-
-// declare a mongoose document based on a Typescript interface representing your schema
-//interface InstitutionDocument extends mongoose.Document, InstitutionData {}
-interface StaffDocument extends mongoose.Document, StaffData {}
-
-
-////////////////
-
 staffSchema.plugin(paginate); // use paginate plugin
 // init staffModel to set right type. Will be updated upon db connections in setup
-export let staffModel = mongoose.model<StaffDocument, mongoose.PaginateModel<StaffDocument> >
-("Staff", staffSchema, "Staff");
+const staffModel = mongoose.model("Staff", staffSchema, "Staff");
 
 
-
+module.exports = {
+    staffModel
+};

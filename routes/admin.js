@@ -1,3 +1,4 @@
+'use strict';
 /*
 Admin functions: set scope on admins that signed up
 */
@@ -16,8 +17,6 @@ import { staffSession } from "../utils/session";
 
 
 const router = express.Router();
-
-export default router;
 
 router.use(express.json());
 
@@ -55,3 +54,7 @@ passport.authenticate('data-master-cookie', {session: false}),
     })
     .catch((err)=> endpointError(err,req,res));
 });
+
+
+
+module.exports = router;

@@ -1,3 +1,5 @@
+'use strict';
+
 // Input validation
 
 const debug = require('debug')('ea:joi');
@@ -13,7 +15,7 @@ const phone = Joi.number();
 
 
 // schema for signup endpoint
-export const signupSchema = Joi.object({
+const signupSchema = Joi.object({
     email: email.required(),
     password: password.required(),
     surname: Joi.string().max(50).required(), // .disallow(['=%_;$*'])
@@ -23,20 +25,29 @@ export const signupSchema = Joi.object({
 
 
 // schema for signupConfirm endpoint
-export const signupConfirmSchema = Joi.object({
+const signupConfirmSchema = Joi.object({
     email: email.required(),
     code: Joi.string().alphanum().max(20).required()
 });
 
 
 // schema for login endpoint
-export const loginSchema = Joi.object({
+const loginSchema = Joi.object({
     email: email.required(),
     password: password.required()
 });
 
 
-export const loginConfirmSchema = Joi.object({
+const loginConfirmSchema = Joi.object({
     email: email.required(),
     code: Joi.string().alphanum().max(20).required()
 });
+
+
+
+module.exports = {
+    signupSchema,
+    signupConfirmSchema,
+    loginSchema,
+    loginConfirmSchema
+};

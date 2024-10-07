@@ -1,3 +1,5 @@
+'use strict';
+
 import * as path from "path";
 // NB: can set DOTENV_CONFIG_PATH env, otherwise defaults to ./envs/.env
 process.env.DOTENV_CONFIG_PATH ||= path.join(__dirname, "envs", ".env");
@@ -34,7 +36,7 @@ app.use("/", adminRouter);
 // TODO: 400 handler
 
 
-app.use((err: RequestError,req: express.Request, res: express.Response, next: express.NextFunction)=>{
+app.use((err, req, res, next)=>{
     debug('error handler. err: ', err);
     let status = err?.errMsg ? 400 : 500;
     let body = err?.errMsg || 'Internal Server Error';

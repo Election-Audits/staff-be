@@ -1,3 +1,5 @@
+'use strict';
+
 const debug = require('debug')('ea:session');
 debug.log = console.log.bind(console);
 import session from "express-session";
@@ -14,14 +16,9 @@ import { secrets, checkSecretsReturned } from "./infisical";
 //     mongoUrl: eAuditMongoUrl
 // });
 
-declare module 'express-session' {
-    interface SessionData {
-        email: string
-    }
-}
 
 // initialize session to set type
-export let staffSession = session({
+let staffSession = session({
     secret: cookieSecretEnv+''
 });
 
@@ -53,3 +50,9 @@ async function setup() {
 }
 
 setup();
+
+
+
+module.exports = {
+    staffSession
+};

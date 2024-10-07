@@ -1,3 +1,5 @@
+'use strict';
+
 const debug = require('debug')('ea:auth');
 debug.log = console.log.bind(console);
 
@@ -15,7 +17,7 @@ new CookieStrategy({
     passReqToCallback: true,
     signed: true
 },
-async (req: express.Request, token: string | undefined, cb: Function)=>{
+async (req, token, cb)=>{
     try {
         debug('cb. signedCookies: ', req.signedCookies);
         let email = req.signedCookies.staff; // email
@@ -45,7 +47,7 @@ new CookieStrategy({
     passReqToCallback: true,
     signed: true
     },
-    async (req: express.Request, token: string | undefined, cb: Function)=>{
+    async (req, token, cb)=>{
         try {
             debug('cb. signedCookies: ', req.signedCookies);
             let email = req.signedCookies.staff; // email

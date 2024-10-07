@@ -1,3 +1,5 @@
+'use strict';
+
 import * as mongoose from "mongoose";
 const debug = require('debug')('ea:mongoose');
 debug.log = console.log.bind(console);
@@ -12,8 +14,8 @@ import { auditDbName } from "../utils/misc";
 const protocol = (BUILD == BUILD_TYPES.local) ? 'mongodb' : 'mongodb+srv';
 const mongoUrlBase = (BUILD == BUILD_TYPES.local) ? '127.0.0.1:27017' : ''; // TODO: set cloud urls
 
-export let eAuditMongoUrl = ''; // general 'eaudit' db assign in setup
-export let databaseConns: {[key: string]: mongoose.Connection}  = {}; // database connections
+let eAuditMongoUrl = ''; // general 'eaudit' db assign in setup
+let databaseConns = {}; // database connections
 
 
 const infisClient = (BUILD == BUILD_TYPES.cloud) ? new InfisicalClient({
@@ -24,8 +26,8 @@ const infisClient = (BUILD == BUILD_TYPES.cloud) ? new InfisicalClient({
 // setup functions to run
 async function setup () {
     // get secrets from Infisical
-    let secretsList: SecretElement[];// | undefined;
-    let secrets: {[key: string]: string} = {}; // store secrets to object keyed by secretKey values
+    let secretsList;// | undefined;
+    let secrets = {}; // store secrets to object keyed by secretKey values
     if (BUILD == BUILD_TYPES.cloud) {
         secretsList = await infisClient?.listSecrets({
             projectId: INFISICAL_PROJECT_ID || '',
@@ -41,7 +43,7 @@ async function setup () {
     `${secrets.MONGO_USER}:${secrets.MONGO_PASSWORD}@`;
     eAuditMongoUrl = `${protocol}://${mongoCreds}${mongoUrlBase}/${auditDbName}`;
     // for each database in DBS, establish a connection
-    let mongoOptions: mongoose.ConnectOptions = {};
+    let mongoOptions = {};
     let dbs = DBS?.split(',') || [];
     let connectFunctions = [];
     for (let db of dbs) {
@@ -68,8 +70,8 @@ setup();
  * @param environment 
  * @returns environment slug
  */
-function getInfisicalEnvSlug(environment: string) {
-    let map : { [key: string]: string; } = {
+function getInfisicalEnvSlug(environment) {
+    let map = {
         development: 'dev',
         production: 'prod',
         staging: 'staging'
@@ -78,12 +80,12 @@ function getInfisicalEnvSlug(environment: string) {
 }
 
 
-let isDbConnected: boolean = false;
+let isDbConnected = false;
 /**
  * checks if a database connection has been established
  * @returns a Promise which resolves when database connection is established
  */
-export function checkDatabaseConnected() : Promise<void> {
+function checkDatabaseConnected() {
     return new Promise((resolve, reject)=>{
         let interval = setInterval(()=>{
             if (!isDbConnected) return;
@@ -92,3 +94,11 @@ export function checkDatabaseConnected() : Promise<void> {
         }, 1000);
     });
 }
+
+
+
+module.exports = {
+    eAuditMongoUrl,
+    databaseConns,
+    checkDatabaseConnected
+};

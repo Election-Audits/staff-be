@@ -1,3 +1,5 @@
+'use strict';
+
 import * as express from "express";
 const debug = require('debug')("ea:ctrl-login");
 debug.log = console.log.bind(console);
@@ -14,7 +16,7 @@ import { signupSchema, signupConfirmSchema, loginSchema, loginConfirmSchema } fr
 
 
 // ES Module import
-let randomString : Function;
+let randomString;
 import('crypto-random-string').then((importRet)=>{
     randomString = importRet.default;
 });
@@ -29,8 +31,8 @@ const cookieOptions = {
 
 
 let transporter = nodemailer.createTransport({});
-let emailUser : string;
-let emailPassword: string;
+let emailUser;
+let emailPassword;
 
 async function setup() {
     await checkSecretsReturned();
@@ -59,7 +61,7 @@ setup();
  * @param next 
  * @returns 
  */
-export async function signup (req: express.Request, res: express.Response, next: express.NextFunction) {
+async function signup (req, res, next) {
     debug('received request to /signup...');
     let body = Object.assign({}, req.body);
     // validate inputs with joi
@@ -81,9 +83,9 @@ export async function signup (req: express.Request, res: express.Response, next:
     // create a code to be sent by email
     let code = randomString({length: 12});
     let emailCodes_0 = record.emailCodes || [];
-    let emailCodes: any = [...emailCodes_0, {code, createdAtms: Date.now()}];
+    let emailCodes = [...emailCodes_0, {code, createdAtms: Date.now()}];
     // remove emailCodes that are too old
-    emailCodes = emailCodes.filter((x: any)=>{
+    emailCodes = emailCodes.filter((x)=>{
         let codeAge = Date.now() - x.createdAtms;
         return codeAge < 2*verifyWindow;
     });
@@ -116,7 +118,7 @@ export async function signup (req: express.Request, res: express.Response, next:
  * @param next 
  * @returns 
  */
-export async function signupConfirm(req: express.Request, res: express.Response, next: express.NextFunction) {
+async function signupConfirm(req, res, next) {
     debug('received request to /signup/confirm...');
     let body = req.body;
     let email = body.email; 
@@ -158,7 +160,7 @@ export async function signupConfirm(req: express.Request, res: express.Response,
  * @param next 
  * @returns 
  */
-export async function login(req: express.Request, res: express.Response, next: express.NextFunction) {
+async function login(req, res, next) {
     let body = req.body;
     let email = body.email; debug('email: ', email);
     // validate inputs with joi
@@ -209,7 +211,7 @@ export async function login(req: express.Request, res: express.Response, next: e
 
 
 
-export async function loginConfirm(req: express.Request, res: express.Response, next: express.NextFunction) {
+async function loginConfirm(req, res, next) {
     debug('received request to /login/confirm...'); //debug('body: ', req.body);
     let body = req.body;
     let email = body.email;
@@ -234,3 +236,11 @@ export async function loginConfirm(req: express.Request, res: express.Response, 
     // set cookie for authenticating future requests
     req.session.email = email;
 }
+
+
+module.exports = {
+    signup,
+    signupConfirm,
+    login,
+    loginConfirm
+};

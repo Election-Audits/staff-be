@@ -1,3 +1,5 @@
+'use strict';
+
 const debug = require('debug')('ea:rte-login');
 debug.log = console.log.bind(console);
 import * as express from "express";
@@ -17,8 +19,6 @@ import { staffSession } from "../utils/session";
 
 
 const router = express.Router();
-
-export default router;
 
 router.use(express.json());
 
@@ -76,6 +76,8 @@ router.put('/signup/confirm',
 });
 
 
+// TODO: /code
+
 /*
 */
 router.put('/login',
@@ -114,7 +116,8 @@ router.put('/logout',
 },
 (req,res,next)=>{
     debug('received request to /logout...');
-    passport.authenticate('staff-cookie', (err: any, user: unknown, failInfo: unknown)=>{
+    debug('cookie: ', req.cookies); debug('signed cookie: ', req.signedCookies);
+    passport.authenticate('staff-cookie', (err, user, failInfo)=>{
         if (err) {
             debug('err: ', err);
             if (err?.errMsg) return res.status(400).send(err);
@@ -125,3 +128,9 @@ router.put('/logout',
         return res.end();
     })(req,res,next);
 });
+
+
+// TODO: /password/reset and ~/confirm
+
+
+module.exports = router;

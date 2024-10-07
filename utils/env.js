@@ -1,3 +1,5 @@
+'use strict';
+
 /*
 NB: Do not put secrets in this file. Instead use a secrets manager like Infisical
 Only load config variables here
@@ -5,18 +7,18 @@ Only load config variables here
 
 import { BUILD_TYPES } from "shared-lib/constants";
 
-export const BUILD = process.env.BUILD; // one of constants.BUILD_TYPES
-export const NODE_ENV = process.env.NODE_ENV;
-export const DBS = process.env.DBS; // mongo dbs to connect to
-export const INFISICAL_ID = process.env.INFISICAL_ID;
-export const INFISICAL_SECRET = process.env.INFISICAL_SECRET;
-export const INFISICAL_PROJECT_ID = process.env.INFISICAL_PROJECT_ID;
-export const MONGO_LOCAL_CREDS = process.env.MONGO_LOCAL_CREDS; // pass Mongo credentials for local build
+const BUILD = process.env.BUILD; // one of constants.BUILD_TYPES
+const NODE_ENV = process.env.NODE_ENV;
+const DBS = process.env.DBS; // mongo dbs to connect to
+const INFISICAL_ID = process.env.INFISICAL_ID;
+const INFISICAL_SECRET = process.env.INFISICAL_SECRET;
+const INFISICAL_PROJECT_ID = process.env.INFISICAL_PROJECT_ID;
+const MONGO_LOCAL_CREDS = process.env.MONGO_LOCAL_CREDS; // pass Mongo credentials for local build
 
 // environment variables set in local build
-export const EMAIL_USER = process.env.EMAIL_USER;
-export const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD;
-export const COOKIE_SECRET = process.env.COOKIE_SECRET;
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD;
+const COOKIE_SECRET = process.env.COOKIE_SECRET;
 
 
 // alert user if environment variables not set
@@ -36,3 +38,17 @@ if (BUILD == BUILD_TYPES.cloud) {
 Other envs not checked here
 DOTENV_CONFIG_PATH
 */
+
+
+module.exports = {
+    BUILD,
+    NODE_ENV,
+    DBS,
+    INFISICAL_ID,
+    INFISICAL_SECRET,
+    INFISICAL_PROJECT_ID,
+    MONGO_LOCAL_CREDS,
+    EMAIL_USER,
+    EMAIL_PASSWORD,
+    COOKIE_SECRET
+};

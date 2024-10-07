@@ -1,3 +1,5 @@
+'use strict';
+
 const debug = require('debug')('ea:infisical');
 debug.log = console.log.bind(console);
 import { INFISICAL_ID, INFISICAL_SECRET, INFISICAL_PROJECT_ID, BUILD, NODE_ENV } from "../utils/env";
@@ -12,11 +14,11 @@ const infisClient = (BUILD == BUILD_TYPES.cloud) ? new InfisicalClient({
 }) : null;
 
 
-export let secrets: {[key: string]: string} = {}; // store secrets to object keyed by secretKey values
+let secrets = {}; // store secrets to object keyed by secretKey values
 
 async function setup() {
     // get secrets from Infisical
-    let secretsList: SecretElement[];// | undefined;
+    let secretsList;// | undefined;
     if (BUILD == BUILD_TYPES.cloud) {
         secretsList = await infisClient?.listSecrets({
             projectId: INFISICAL_PROJECT_ID || '',
@@ -38,8 +40,8 @@ setup();
  * @param environment 
  * @returns environment slug
  */
-function getInfisicalEnvSlug(environment: string) {
-    let map : { [key: string]: string; } = {
+function getInfisicalEnvSlug(environment) {
+    let map = {
         development: 'dev',
         production: 'prod',
         staging: 'staging'
@@ -48,12 +50,12 @@ function getInfisicalEnvSlug(environment: string) {
 }
 
 
-let secretsReadyBool: boolean = false;
+let secretsReadyBool = false;
 /**
  * checks if a database connection has been established
  * @returns a Promise which resolves when database connection is established
  */
-export function checkSecretsReturned() : Promise<void> {
+function checkSecretsReturned() {
     return new Promise((resolve, reject)=>{
         // in local build, not using Infisical, resolve trivially
         if (BUILD == BUILD_TYPES.local) {
@@ -79,3 +81,10 @@ export function checkSecretsReturned() : Promise<void> {
         }, 1000); // retry every second until resolved/rejected
     });
 }
+
+
+
+module.exports = {
+    secrets,
+    checkSecretsReturned
+};
