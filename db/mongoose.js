@@ -1,13 +1,13 @@
 'use strict';
 
-import * as mongoose from "mongoose";
+const mongoose = require('mongoose');
 const debug = require('debug')('ea:mongoose');
 debug.log = console.log.bind(console);
-import { BUILD_TYPES } from "shared-lib/constants";
-import { BUILD, INFISICAL_ID, INFISICAL_SECRET, INFISICAL_PROJECT_ID, NODE_ENV, 
-    MONGO_LOCAL_CREDS, DBS } from "../utils/env";
-import { InfisicalClient, LogLevel, SecretElement } from "@infisical/sdk";
-import { auditDbName } from "../utils/misc";
+const { BUILD_TYPES } = require('shared-lib/constants');
+const { BUILD, INFISICAL_ID, INFISICAL_SECRET, INFISICAL_PROJECT_ID, NODE_ENV, 
+    MONGO_LOCAL_CREDS, DBS } = require('../utils/env');
+const { InfisicalClient, LogLevel, SecretElement } = require('@infisical/sdk');
+const { auditDbName } = require('../utils/misc');
 
 
 // set connection string depending on whether it's a local or cloud build

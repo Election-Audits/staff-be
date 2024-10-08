@@ -5,7 +5,7 @@ NB: Do not put secrets in this file. Instead use a secrets manager like Infisica
 Only load config variables here
 */
 
-import { BUILD_TYPES } from "shared-lib/constants";
+const { BUILD_TYPES } = require('shared-lib/constants');
 
 const BUILD = process.env.BUILD; // one of constants.BUILD_TYPES
 const NODE_ENV = process.env.NODE_ENV;

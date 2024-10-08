@@ -1,18 +1,18 @@
 'use strict';
 
-import * as express from "express";
 const debug = require('debug')("ea:ctrl-login");
 debug.log = console.log.bind(console);
-import { BUILD_TYPES } from "shared-lib/constants";
-import { BUILD, EMAIL_USER as emailUserEnv, EMAIL_PASSWORD as emailPasswordEnv } from "../utils/env";
-import nodemailer from "nodemailer";
-import { staffModel } from "../db/models";
-import i18next from "i18next";
-import * as bcrypt from "bcrypt";
-import { secrets ,checkSecretsReturned } from "../utils/infisical";
-import { staffCookieMaxAge } from "../utils/misc"; // init i18next
-import { signupSchema, signupConfirmSchema, loginSchema, loginConfirmSchema } from "../utils/joi";
-// import { getJoiError } from "shared-lib/backend/misc";
+const { BUILD_TYPES } = require('shared-lib/constants');
+const { BUILD, EMAIL_USER: emailUserEnv, EMAIL_PASSWORD: emailPasswordEnv } = require('../utils/env');
+const nodemailer = require('nodemailer');
+let { getStaffModel } = require('../db/models');
+//const models = require('../db/models'); let { staffModel } = models;
+const i18next = require('i18next');
+const bcrypt = require('bcrypt');
+const { secrets ,checkSecretsReturned } = require('../utils/infisical');
+const { staffCookieMaxAge } = require('../utils/misc');
+const { signupSchema, signupConfirmSchema, loginSchema, loginConfirmSchema } = require('../utils/joi');
+// todo getJoiError
 
 
 // ES Module import
@@ -72,6 +72,7 @@ async function signup (req, res, next) {
     }
     let email = body.email; debug('email: ', email);
     // First try to get record from db to check pre-approval
+    let staffModel = getStaffModel();
     let record = await staffModel.findOne({email}, {password: 0});
     debug('record: ', record);
     if (!record) return Promise.reject({errMsg: i18next.t("not_approved_signup")}); // , {lng}
@@ -130,6 +131,7 @@ async function signupConfirm(req, res, next) {
         return Promise.reject({errMsg: i18next.t("request_body_error")}); // todo printf
     }
     // first get record from db
+    let staffModel = getStaffModel();
     let record = await staffModel.findOne({email});
     debug('record: ', record);
     // check if account already exists
@@ -169,6 +171,9 @@ async function login(req, res, next) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")}); // todo printf
     }
+    // debug('models: ', models);
+    // let { staffModel } = models;
+    let staffModel = getStaffModel(); // debug('staff model: ', staffModel);
     let record = await staffModel.findOne({email});
     debug('record: ', JSON.stringify(record));
     // Ensure user account exists
@@ -221,6 +226,7 @@ async function loginConfirm(req, res, next) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")}); // todo printf
     }
+    let staffModel = getStaffModel();
     let record = await staffModel.findOne({email});
     // search emailCodes array for a code that matches
     let dbCodes = record?.emailCodes || [];

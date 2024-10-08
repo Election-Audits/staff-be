@@ -5,15 +5,15 @@ Admin functions: set scope on admins that signed up
 
 const debug = require('debug')('ea:rte-admin');
 debug.log = console.log.bind(console);
-import * as express from "express";
-import { endpointError } from "shared-lib/backend/misc";
-import passport from "passport";
-import { COOKIE_SECRET as cookieSecretEnv, BUILD } from "../utils/env";
-import cookieParser from "cookie-parser";
-import { secrets , checkSecretsReturned } from "../utils/infisical";
-import { BUILD_TYPES } from "shared-lib/constants";
-import { getStaffWithoutRoles } from "../controllers/admin";
-import { staffSession } from "../utils/session";
+const express = require('express');
+const { endpointError } = require('shared-lib/backend/misc');
+const passport = require('passport');
+const { COOKIE_SECRET: cookieSecretEnv, BUILD } = require('../utils/env');
+const cookieParser = require('cookie-parser');
+const { secrets , checkSecretsReturned } = require('../utils/infisical');
+const { BUILD_TYPES } = require('shared-lib/constants');
+const { getStaffWithoutRoles } = require('../controllers/admin');
+const { staffSession } = require('../utils/session');
 
 
 const router = express.Router();
@@ -44,7 +44,7 @@ GET a list of members of staff in the given country
 */
 router.get('/allstaff',
 cookieParser(cookieSecret),
-staffSession,
+(req,res,next)=>{ staffSession(req,res,next); },
 passport.authenticate('data-master-cookie', {session: false}),
 (req,res,next)=>{
     debug('received request to GET /allstaff');

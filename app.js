@@ -1,18 +1,19 @@
 'use strict';
 
-import * as path from "path";
+const path = require('path');
 // NB: can set DOTENV_CONFIG_PATH env, otherwise defaults to ./envs/.env
 process.env.DOTENV_CONFIG_PATH ||= path.join(__dirname, "envs", ".env");
-import "dotenv/config";
+require('dotenv/config');
 
-import express from "express";
+const express = require('express');
 const debug = require('debug')('ea:app');
 debug.log = console.log.bind(console);
-import "./auth"; // passport setup
+require('./auth'); // passport setup
+const passport = require('passport');
 
 
-import loginRouter from "./routes/login";
-import adminRouter from "./routes/admin";
+const loginRouter = require('./routes/login');
+const adminRouter = require('./routes/admin');
 
 
 const app = express();
@@ -27,6 +28,8 @@ app.get('/ping', (req,res,next)=>{
     res.send("App (staff) is running");
 });
 
+
+app.use(passport.initialize());
 
 // mount routers
 app.use("/", loginRouter);

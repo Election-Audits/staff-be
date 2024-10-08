@@ -3,11 +3,11 @@
 const debug = require('debug')('ea:auth');
 debug.log = console.log.bind(console);
 
-import passport from "passport";
-import { Strategy as CookieStrategy } from "passport-cookie";
-import { staffModel } from "./db/models";
-import * as express from "express";
-import i18next from "i18next";
+const passport = require('passport');
+const { Strategy: CookieStrategy } = require('passport-cookie');
+const { staffModel } = require('./db/models');
+const express = require('express');
+const i18next = require('i18next');
 
 
 // Auth with staff cookie. TODO: time bound?

@@ -2,14 +2,15 @@
 
 // Mongoose Models
 
-import * as mongoose from "mongoose";
+const mongoose = require('mongoose');
 const debug = require('debug')('ea:models');
 debug.log = console.log.bind(console);
-import { databaseConns, checkDatabaseConnected } from "./mongoose";
-import { DBS } from "../utils/env"
-import paginate from "mongoose-paginate-v2";
+const { databaseConns, checkDatabaseConnected } = require('./mongoose');
+const { DBS } = require('../utils/env');
+const paginate = require('mongoose-paginate-v2');
 
 
+let staffModel; // = ()=>{}
 
 async function setup() {
     await checkDatabaseConnected();
@@ -21,7 +22,7 @@ async function setup() {
         
     }
     // now setup eaudit database for staff app
-    staffModel = databaseConns.eaudit.model("Staff", staffSchema, "Staff")
+    staffModel = databaseConns.eaudit.model("Staff", staffSchema, "Staff");
 }
 setup();
 
@@ -59,11 +60,9 @@ const staffSchema = new Schema({
 });
 
 
-staffSchema.plugin(paginate); // use paginate plugin
-// init staffModel to set right type. Will be updated upon db connections in setup
-const staffModel = mongoose.model("Staff", staffSchema, "Staff");
+// staffSchema.plugin(paginate); //TODO use paginate plugin
 
 
 module.exports = {
-    staffModel
+    getStaffModel: ()=> staffModel
 };

@@ -2,19 +2,19 @@
 
 const debug = require('debug')('ea:rte-login');
 debug.log = console.log.bind(console);
-import * as express from "express";
-import { endpointError } from "shared-lib/backend/misc";
-import * as nodemailer from "nodemailer";
-import { secrets , checkSecretsReturned } from "../utils/infisical";
-import { BUILD_TYPES } from "shared-lib/constants";
-import { BUILD, EMAIL_USER as emailUserEnv, EMAIL_PASSWORD as emailPasswordEnv, COOKIE_SECRET as cookieSecretEnv } 
-from "../utils/env";
-import multer from "multer";
-import { signup, signupConfirm, login, loginConfirm } from "../controllers/login";
-import passport from "passport";
-import i18next from "i18next";
-import cookieParser from "cookie-parser";
-import { staffSession } from "../utils/session";
+const express = require('express');
+const { endpointError } = require('shared-lib/backend/misc');
+const nodemailer = require('nodemailer');
+const { secrets , checkSecretsReturned } = require('../utils/infisical');
+const { BUILD_TYPES } = require('shared-lib/constants');
+const { BUILD, EMAIL_USER: emailUserEnv, EMAIL_PASSWORD: emailPasswordEnv, COOKIE_SECRET: cookieSecretEnv } 
+= require('../utils/env');
+const multer = require('multer');
+const { signup, signupConfirm, login, loginConfirm } = require('../controllers/login');
+const passport = require('passport');
+const i18next = require('i18next');
+const cookieParser = require('cookie-parser');
+const { staffSession, getStaffSession } = require('../utils/session');
 
 
 
@@ -96,7 +96,10 @@ multer().none(),
 
 router.put('/login/confirm',
 (req,res,next)=>{
-    staffSession(req,res,next);
+    // debug('staffSession: ', staffSession)
+    //staffSession(req,res,next);
+    getStaffSession()(req,res,next);
+    // next();
 },
 (req,res,next)=>{
     loginConfirm(req,res,next)

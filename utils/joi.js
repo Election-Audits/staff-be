@@ -4,7 +4,7 @@
 
 const debug = require('debug')('ea:joi');
 debug.log = console.log.bind(console);
-import * as Joi from "joi";
+const Joi = require('joi');
 
 
 

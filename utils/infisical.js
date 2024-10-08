@@ -2,9 +2,9 @@
 
 const debug = require('debug')('ea:infisical');
 debug.log = console.log.bind(console);
-import { INFISICAL_ID, INFISICAL_SECRET, INFISICAL_PROJECT_ID, BUILD, NODE_ENV } from "../utils/env";
-import { BUILD_TYPES } from "shared-lib/constants";
-import { InfisicalClient, LogLevel, SecretElement } from "@infisical/sdk";
+const { INFISICAL_ID, INFISICAL_SECRET, INFISICAL_PROJECT_ID, BUILD, NODE_ENV } = require('../utils/env');
+const { BUILD_TYPES } = require('shared-lib/constants');
+const { InfisicalClient, LogLevel, SecretElement } = require('@infisical/sdk');
 
 
 

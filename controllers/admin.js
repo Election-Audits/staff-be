@@ -1,11 +1,11 @@
 'use strict';
 
-import * as express from "express";
+const express = require('express');
 const debug = require('debug')('ea:ctrl-admin');
 debug.log = console.log.bind(console);
-import i18next from "i18next";
+const i18next = require('i18next');
 // TODO  "../utils/joi"
-import { } from "../db/models";
+const { } = require("../db/models");
 
 
 const pageLimit = 20;

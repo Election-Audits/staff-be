@@ -1,7 +1,7 @@
 'use strict';
 
-import i18next from "i18next";
-import * as english from "shared-lib/locales/en.json";
+const i18next = require('i18next');
+const english = require('shared-lib/locales/en.json');
 
 
 /* constants */

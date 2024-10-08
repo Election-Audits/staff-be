@@ -2,13 +2,14 @@
 
 const debug = require('debug')('ea:session');
 debug.log = console.log.bind(console);
-import session from "express-session";
-import MongoStore from "connect-mongo";
-import { COOKIE_SECRET as cookieSecretEnv, BUILD } from "./env";
-import { BUILD_TYPES } from "shared-lib/constants";
-import { eAuditMongoUrl } from "../db/mongoose";
-import { auditDbName, staffCookieMaxAge } from "./misc";
-import { secrets, checkSecretsReturned } from "./infisical";
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
+// const MongoDBStore = require('connect-mongodb-session')(session);
+const { COOKIE_SECRET: cookieSecretEnv, BUILD } = require('./env');
+const { BUILD_TYPES } = require('shared-lib/constants');
+const { eAuditMongoUrl } = require('../db/mongoose');
+const { auditDbName, staffCookieMaxAge } = require('./misc');
+const { secrets, checkSecretsReturned } = require('./infisical');
 
 
 // create Mongo store
@@ -16,11 +17,7 @@ import { secrets, checkSecretsReturned } from "./infisical";
 //     mongoUrl: eAuditMongoUrl
 // });
 
-
-// initialize session to set type
-let staffSession = session({
-    secret: cookieSecretEnv+''
-});
+let staffSession = ()=>{};
 
 /*
 Obtain cookie secret from Infisical in cloud builds
@@ -36,6 +33,16 @@ async function setup() {
         // dbName: auditDbName // NB: dbName set in connection string
         stringify: false
     });
+
+    // const store = new MongoDBStore({
+    //     uri: eAuditMongoUrl,
+        
+    // });
+
+    store.on('error', (error)=>{
+        debug('Mongodb store error: ', error);
+    });
+
     // session
     staffSession = session({
         name: 'staff',
@@ -54,5 +61,6 @@ setup();
 
 
 module.exports = {
-    staffSession
+    staffSession,
+    getStaffSession: ()=> staffSession
 };
