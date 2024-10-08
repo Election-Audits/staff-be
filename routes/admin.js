@@ -13,7 +13,7 @@ const cookieParser = require('cookie-parser');
 const { secrets , checkSecretsReturned } = require('../utils/infisical');
 const { BUILD_TYPES } = require('shared-lib/constants');
 const { getStaffWithoutRoles } = require('../controllers/admin');
-const { staffSession } = require('../utils/session');
+const { getStaffSession } = require('../utils/session');
 
 
 const router = express.Router();
@@ -44,7 +44,7 @@ GET a list of members of staff in the given country
 */
 router.get('/allstaff',
 cookieParser(cookieSecret),
-(req,res,next)=>{ staffSession(req,res,next); },
+(req,res,next)=>{ getStaffSession()(req,res,next); },
 passport.authenticate('data-master-cookie', {session: false}),
 (req,res,next)=>{
     debug('received request to GET /allstaff');

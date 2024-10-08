@@ -5,7 +5,7 @@ debug.log = console.log.bind(console);
 
 const passport = require('passport');
 const { Strategy: CookieStrategy } = require('passport-cookie');
-const { staffModel } = require('./db/models');
+const { getStaffModel } = require('./db/models');
 const express = require('express');
 const i18next = require('i18next');
 
@@ -21,6 +21,7 @@ async (req, token, cb)=>{
     try {
         debug('cb. signedCookies: ', req.signedCookies);
         let email = req.signedCookies.staff; // email
+        let staffModel = getStaffModel();
         let staff = await staffModel.findOne({email}, {password: 0});
         if (!staff) return cb(null, false, {errMsg: i18next.t("account_not_exist")});
         // ensure signup has been completed, i.e emailConfirmed field set
@@ -49,8 +50,10 @@ new CookieStrategy({
     },
     async (req, token, cb)=>{
         try {
-            debug('cb. signedCookies: ', req.signedCookies);
-            let email = req.signedCookies.staff; // email
+            // debug('cb. signedCookies: ', req.signedCookies);
+            // debug('session: ', req.session);
+            let email = req.session.email; // signedCookies email
+            let staffModel = getStaffModel();
             let staff = await staffModel.findOne({email}, {password: 0});
             if (!staff) {
                 debug('staff falsy. Will callback with failure message');

@@ -60,7 +60,7 @@ const staffSchema = new Schema({
 });
 
 
-// staffSchema.plugin(paginate); //TODO use paginate plugin
+staffSchema.plugin(paginate); // use paginate plugin
 
 
 module.exports = {

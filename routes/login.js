@@ -14,7 +14,7 @@ const { signup, signupConfirm, login, loginConfirm } = require('../controllers/l
 const passport = require('passport');
 const i18next = require('i18next');
 const cookieParser = require('cookie-parser');
-const { staffSession, getStaffSession } = require('../utils/session');
+const { getStaffSession } = require('../utils/session');
 
 
 
@@ -63,7 +63,7 @@ account creation
 */
 router.put('/signup/confirm',
 (req,res,next)=>{
-    staffSession(req,res,next);
+    getStaffSession()(req,res,next);
 },
 (req,res,next)=>{
     signupConfirm(req,res,next)
@@ -96,10 +96,7 @@ multer().none(),
 
 router.put('/login/confirm',
 (req,res,next)=>{
-    // debug('staffSession: ', staffSession)
-    //staffSession(req,res,next);
     getStaffSession()(req,res,next);
-    // next();
 },
 (req,res,next)=>{
     loginConfirm(req,res,next)
@@ -115,7 +112,7 @@ router.put('/login/confirm',
 /* Logout */
 router.put('/logout',
 (req,res,next)=>{
-    staffSession(req,res,next);
+    getStaffSession()(req,res,next);
 },
 (req,res,next)=>{
     debug('received request to /logout...');

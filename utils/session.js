@@ -3,8 +3,8 @@
 const debug = require('debug')('ea:session');
 debug.log = console.log.bind(console);
 const session = require('express-session');
-const MongoStore = require('connect-mongo');
-// const MongoDBStore = require('connect-mongodb-session')(session);
+// const MongoStore = require('connect-mongo');
+const MongoDBStore = require('connect-mongodb-session')(session);
 const { COOKIE_SECRET: cookieSecretEnv, BUILD } = require('./env');
 const { BUILD_TYPES } = require('shared-lib/constants');
 const { eAuditMongoUrl } = require('../db/mongoose');
@@ -28,16 +28,16 @@ async function setup() {
     // create store with updated eAuditMongoUrl
     // debug('eauditMongoUrl: ', eAuditMongoUrl);
     debug(`eAuditMongoUrl: ${eAuditMongoUrl}, cookieSecret: ${cookieSecret}, cookieMaxAge: ${staffCookieMaxAge}`);
-    const store = MongoStore.create({
-        mongoUrl: eAuditMongoUrl,
-        // dbName: auditDbName // NB: dbName set in connection string
-        stringify: false
-    });
-
-    // const store = new MongoDBStore({
-    //     uri: eAuditMongoUrl,
-        
+    // const store = MongoStore.create({ // connect-mongo
+    //     mongoUrl: eAuditMongoUrl,
+    //     // dbName: auditDbName // NB: dbName set in connection string
+    //     stringify: false
     // });
+
+    const store = new MongoDBStore({
+        uri: eAuditMongoUrl
+        
+    });
 
     store.on('error', (error)=>{
         debug('Mongodb store error: ', error);
@@ -61,6 +61,5 @@ setup();
 
 
 module.exports = {
-    staffSession,
     getStaffSession: ()=> staffSession
 };
