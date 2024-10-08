@@ -40,3 +40,8 @@ export const loginConfirmSchema = Joi.object({
     email: email.required(),
     code: Joi.string().alphanum().max(20).required()
 });
+
+
+export const getStaffByIdSchema = Joi.object({
+    staffId: Joi.string().alphanum().max(30)
+});

@@ -11,11 +11,11 @@ import { COOKIE_SECRET as cookieSecretEnv, BUILD } from "../utils/env";
 import cookieParser from "cookie-parser";
 import { secrets , checkSecretsReturned } from "../utils/infisical";
 import { BUILD_TYPES } from "shared-lib/constants";
-import { getStaffWithoutRoles } from "../controllers/admin";
+import { getStaffWithoutRoles, getStaffById } from "../controllers/admin";
 import { staffSession } from "../utils/session";
 
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 
 export default router;
 
@@ -48,6 +48,21 @@ passport.authenticate('data-master-cookie', {session: false}),
 (req,res,next)=>{
     debug('received request to GET /allstaff');
     getStaffWithoutRoles(req,res,next)
+    .then((data)=>{
+        return res.status(200).send(data);
+    })
+    .catch((err)=> endpointError(err,req,res));
+});
+
+
+/*
+GET a particular member of staff
+*/
+router.get('/staff/:staffId',
+passport.authenticate('data-master-cookie', {session: false}),
+(req,res,next)=>{
+    debug('received request to /staff/:staffId');
+    getStaffById(req,res,next)
     .then((data)=>{
         return res.status(200).send(data);
     })

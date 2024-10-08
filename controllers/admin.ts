@@ -4,6 +4,8 @@ debug.log = console.log.bind(console);
 import i18next from "i18next";
 import { } from "../utils/joi"; // TODO
 import { staffModel } from "../db/models";
+import { getStaffByIdSchema } from "../utils/joi";
+import { getJoiError } from "shared-lib/backend/misc";
 
 
 const pageLimit = 20;
@@ -17,7 +19,7 @@ const pageLimit = 20;
  */
 export async function getStaffWithoutRoles(req: express.Request, res: express.Response, next: express.NextFunction) {
     let filter = {roles: {$exists: false}}; // users where roles field not set
-    // assertNumber(req.query.pg); // ensure that query.pg is a number
+    // NB: input check achieved in getQueryNumberWithDefault. ensure that query.pg is a number. 
     let page = getQueryNumberWithDefault(req.query?.pg); // get page from query or start with 1
     // set projection. The fields that should be returned for every object
     let projection = {_id: 1, email: 1, surname: 1, otherNames: 1, scope: 1, roles: 1};
@@ -43,3 +45,24 @@ function getQueryNumberWithDefault(queryIn: unknown) : number {
 // function assertNumber(val: unknown) : asserts val is number{
 //     if (typeof val !== 'number') throw Error('Not a number')
 // }
+
+
+/**
+ * get a particular staff member by Id
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function getStaffById(req: express.Request, res: express.Response, next: express.NextFunction) {
+    // check param input
+    let { error } = await getStaffByIdSchema.validate(req.params);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")}); // todo printf
+    }
+    let staffId = req.params.staffId;
+    let projection = {password: 0, emailCodes: 0}; // fields to return/ignore
+    let staff = await staffModel.findById(staffId, projection);
+    debug('staff: ', staff);
+    return staff;
+}
