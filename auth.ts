@@ -3,7 +3,7 @@ debug.log = console.log.bind(console);
 
 import passport from "passport";
 import { Strategy as CookieStrategy } from "passport-cookie";
-import { staffModel } from "./db/models";
+import { staffModel } from "./db/models/staff";
 import * as express from "express";
 import i18next from "i18next";
 

@@ -3,7 +3,7 @@ const debug = require('debug')('ea:ctrl-admin');
 debug.log = console.log.bind(console);
 import i18next from "i18next";
 import { } from "../utils/joi"; // TODO
-import { staffModel } from "../db/models";
+import { staffModel } from "../db/models/staff";
 import { getStaffByIdSchema } from "../utils/joi";
 import { getJoiError } from "shared-lib/backend/misc";
 
@@ -65,4 +65,18 @@ export async function getStaffById(req: express.Request, res: express.Response, 
     let staff = await staffModel.findById(staffId, projection);
     debug('staff: ', staff);
     return staff;
+}
+
+
+// TODO: updateStaffByDataMaster
+
+
+/**
+ * create electoral levels for a country e.g. [country, region, constituency, polling-station]
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function createElectoralLevels(req: express.Request, res: express.Response, next: express.NextFunction) {
+    
 }

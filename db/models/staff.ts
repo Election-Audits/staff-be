@@ -3,8 +3,8 @@
 import * as mongoose from "mongoose";
 const debug = require('debug')('ea:models');
 debug.log = console.log.bind(console);
-import { databaseConns, checkDatabaseConnected } from "./mongoose";
-import { DBS } from "../utils/env"
+import { databaseConns, checkDatabaseConnected } from "../mongoose";
+import { DBS } from "../../utils/env"
 import paginate from "mongoose-paginate-v2";
 
 
