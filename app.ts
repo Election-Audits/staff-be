@@ -7,6 +7,7 @@ import express from "express";
 const debug = require('debug')('ea:app');
 debug.log = console.log.bind(console);
 import "./auth"; // passport setup
+import passport from "passport";
 
 
 import loginRouter from "./routes/login";
@@ -25,6 +26,8 @@ app.get('/ping', (req,res,next)=>{
     res.send("App (staff) is running");
 });
 
+
+app.use(passport.initialize()); // initialize passport
 
 // mount routers
 app.use("/", loginRouter);

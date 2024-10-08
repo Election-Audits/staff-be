@@ -47,8 +47,8 @@ new CookieStrategy({
     },
     async (req: express.Request, token: string | undefined, cb: Function)=>{
         try {
-            debug('cb. signedCookies: ', req.signedCookies);
-            let email = req.signedCookies.staff; // email
+            debug('cb for data-master. signedCookies: ', req.signedCookies); // debug('session: ', req.session);
+            let email = req.session.email; // email
             let staff = await staffModel.findOne({email}, {password: 0});
             if (!staff) {
                 debug('staff falsy. Will callback with failure message');

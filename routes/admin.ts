@@ -21,11 +21,11 @@ export default router;
 
 router.use(express.json());
 
-
 let cookieSecret = cookieSecretEnv +'';
+debug('cookieSecret from env: ', cookieSecret);
 
-// router.use(staffSession); TODO
-// router.use(cookieParser(cookieSecret));
+router.use(cookieParser(cookieSecret));
+router.use((req,res,next)=> staffSession(req,res,next));
 
 
 /*
@@ -44,8 +44,6 @@ setup();
 GET a list of members of staff in the given country
 */
 router.get('/allstaff',
-cookieParser(cookieSecret),
-staffSession,
 passport.authenticate('data-master-cookie', {session: false}),
 (req,res,next)=>{
     debug('received request to GET /allstaff');
