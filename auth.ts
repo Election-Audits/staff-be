@@ -18,7 +18,7 @@ new CookieStrategy({
 async (req: express.Request, token: string | undefined, cb: Function)=>{
     try {
         debug('cb. signedCookies: ', req.signedCookies);
-        let email = req.signedCookies.staff; // email
+        let email = req.session.email; // email
         let staff = await staffModel.findOne({email}, {password: 0});
         if (!staff) return cb(null, false, {errMsg: i18next.t("account_not_exist")});
         // ensure signup has been completed, i.e emailConfirmed field set

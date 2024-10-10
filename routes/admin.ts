@@ -22,7 +22,7 @@ export default router;
 router.use(express.json());
 
 let cookieSecret = cookieSecretEnv +'';
-debug('cookieSecret from env: ', cookieSecret);
+// debug('cookieSecret from env: ', cookieSecret);
 
 router.use(cookieParser(cookieSecret));
 router.use((req,res,next)=> staffSession(req,res,next));
@@ -80,7 +80,7 @@ set the scope, roles etc. of a given member of staff
 /*
 create electoral levels for a country: e.g. [country, ]
 */
-router.post('/electoralLevels',
+router.post('/electoral-levels',
 passport.authenticate('data-master-cookie', {session: false}),
 (req,res,next)=>{
     debug('received request to POST /electoralLevels');

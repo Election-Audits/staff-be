@@ -12,6 +12,7 @@ import passport from "passport";
 
 import loginRouter from "./routes/login";
 import adminRouter from "./routes/admin";
+import staffRouter from "./routes/staff";
 
 
 const app = express();
@@ -32,6 +33,7 @@ app.use(passport.initialize()); // initialize passport
 // mount routers
 app.use("/", loginRouter);
 app.use("/", adminRouter);
+app.use("/", staffRouter);
 
 
 // TODO: 400 handler
