@@ -45,3 +45,11 @@ export const loginConfirmSchema = Joi.object({
 export const getStaffByIdSchema = Joi.object({
     staffId: Joi.string().alphanum().max(30)
 });
+
+
+// electoralLevels
+export const electoralLevelsSchema = Joi.object({
+    levels: Joi.array().items(
+        Joi.string().max(50)
+    )
+});

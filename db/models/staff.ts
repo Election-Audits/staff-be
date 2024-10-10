@@ -1,7 +1,7 @@
-// Mongoose Models
+// Mongoose Staff Model
 
 import * as mongoose from "mongoose";
-const debug = require('debug')('ea:models');
+const debug = require('debug')('ea:staff-model');
 debug.log = console.log.bind(console);
 import { databaseConns, checkDatabaseConnected } from "../mongoose";
 import { DBS } from "../../utils/env"
@@ -13,7 +13,6 @@ async function setup() {
     await checkDatabaseConnected();
     let dbs = DBS?.split(",") || [];
     // create models for each database (by country/entity)
-    // let isGeneralDbPresent = false;
     for (let db of dbs) {
         if (db == 'eaudit') continue;
         

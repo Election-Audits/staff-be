@@ -11,7 +11,7 @@ import { COOKIE_SECRET as cookieSecretEnv, BUILD } from "../utils/env";
 import cookieParser from "cookie-parser";
 import { secrets , checkSecretsReturned } from "../utils/infisical";
 import { BUILD_TYPES } from "shared-lib/constants";
-import { getStaffWithoutRoles, getStaffById } from "../controllers/admin";
+import { getStaffWithoutRoles, getStaffById, createElectoralLevels } from "../controllers/admin";
 import { staffSession } from "../utils/session";
 
 
@@ -61,10 +61,32 @@ GET a particular member of staff
 router.get('/staff/:staffId',
 passport.authenticate('data-master-cookie', {session: false}),
 (req,res,next)=>{
-    debug('received request to /staff/:staffId');
+    debug('received request to GET /staff/:staffId');
     getStaffById(req,res,next)
     .then((data)=>{
         return res.status(200).send(data);
+    })
+    .catch((err)=> endpointError(err,req,res));
+});
+
+
+/* TODO
+set the scope, roles etc. of a given member of staff
+*/
+// router.put('staff/:staffId')
+
+
+
+/*
+create electoral levels for a country: e.g. [country, ]
+*/
+router.post('/electoralLevels',
+passport.authenticate('data-master-cookie', {session: false}),
+(req,res,next)=>{
+    debug('received request to POST /electoralLevels');
+    createElectoralLevels(req,res,next)
+    .then(()=>{
+        return res.status(200).send();
     })
     .catch((err)=> endpointError(err,req,res));
 });
