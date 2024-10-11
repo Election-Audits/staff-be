@@ -45,7 +45,7 @@ GET the electoral levels in a country
 router.get('/electoral-levels',
 passport.authenticate('staff-cookie', {session: false}),
 (req,res,next)=>{
-    debug('received request to GET /electoral-levels');
+    debug('received request to GET /electoral-levels...');
     getElectoralLevels(req,res,next)
     .then((data)=>{
         return res.status(200).send(data);
@@ -53,3 +53,13 @@ passport.authenticate('staff-cookie', {session: false}),
     .catch((err)=> endpointError(err,req,res));
 });
 
+
+/*
+POST electoral area
+*/
+router.post('/electoral-area',
+passport.authenticate('staff-cookie', {session: false}),
+(req,res,next)=>{
+    debug('received request to POST /electoral-area...');
+
+});
