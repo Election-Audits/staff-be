@@ -10,6 +10,9 @@ import { Request, Response, NextFunction } from "express";
 import i18next from "i18next";
 import { ensureDirExists } from "../utils/misc";
 import * as XLSX from "xlsx";
+// import { REPLACE_STRING } from "shared-lib/constants";
+
+// const REPLACE_STRING = "__replace__"; // TODO: get from constants file
 
 
 const maxFileSize = 20e6; // 20 MB
@@ -50,7 +53,7 @@ export async function saveExcelDoc(req: Request, res: Response, next: NextFuncti
 const storage = multer.diskStorage({
     destination: (req, file, cb)=>{
         let dir = req.myFileDir;
-        req.myFileName = file.originalname;
+        // req.myFileName = file.originalname;
         cb(null, dir);
     },
     filename: (req, file, cb)=>{
@@ -64,6 +67,7 @@ const storage = multer.diskStorage({
             cb(new Error(errMsg), ''); // {errMsg}. todo
         }
         let fileName = req.user?.email + ext; //file.originalname;
+        req.myFileName = fileName;
         return cb(null, fileName);
     }
 });
@@ -74,7 +78,7 @@ const storage = multer.diskStorage({
  * @param filePath 
  * @returns 
  */
-async function getDataFromExcel(filePath: string) {
+export async function getDataFromExcel(filePath: string) {
     // some excel files may not contain data in the first worksheet. Find the worksheet with the most data
     // and use that as the data worksheet
     let workbook = XLSX.readFile(filePath);
@@ -91,10 +95,130 @@ async function getDataFromExcel(filePath: string) {
 }
 
 
-
-async function validateElectoralAreaExcel(worksheet: XLSX.WorkSheet) {
+///////// ------- Data Validation ----------------------------
+/**
+ * validate that an excel sheet has the right columns
+ * @param worksheet 
+ * @param requiredColumns 
+ * @returns 
+ */
+export async function validateExcel(worksheet: XLSX.WorkSheet, requiredColumns: string[]) {
     // the columns in the worksheet must contain the expected database fields (name, parentLevel, etc.)
-    
+    // NB: assume the header starts at cell A3, ie the first two rows can be used for description, but data starts
+    // from row 3
+    let headerRow = getRowData(startCell, worksheet);
+    // check if any columns are missing
+    let missingColumns = [];
+    for (let requiredCol of requiredColumns) {
+        if (!headerRow.includes(requiredCol)) missingColumns.push(requiredCol);
+    }
+    // send error message if missing column(s)
+    if (missingColumns.length > 0) {
+        // add missing columns
+        let errMsg = i18next.t('missing_columns') +' '+ missingColumns.join(', ');
+        return Promise.reject({errMsg});
+    }
 }
 
 
+const startCell = 'A3'; // assuming header starts on first cell of third row
+// numbers and letters that are combined to form Excel cell names
+const numbers = ['0','1','2','3','4','5','6','7','8','9'];
+const letters = 
+['A','B','C','D','E','F','G','H','I','J','K','L','M',
+'N','O','P','Q','R','S','T','U','V','W','X','Y','Z'];
+
+
+/**
+ * Returns a row of data
+ * @param startCell 
+ * @param worksheet 
+ * @returns 
+ */
+function getRowData(startCell: string, worksheet: XLSX.WorkSheet) {
+    let [startLetter, rowNumber] = splitCellName(startCell);
+    let curCellLetter : string | null = startLetter; //let curCellNumber = parseInt(startNumber);
+    let cellData;
+    let data = [];
+    do {
+        let ref = curCellLetter + rowNumber;
+        cellData = worksheet[ref]?.v;
+        data.push(cellData); //  if (cellData) 
+        //
+        curCellLetter = getNextLetterInRow(curCellLetter);
+        //ref = startLetter + parseInt()
+    } while (cellData && curCellLetter); // TODO: use end column to set bounds
+    return data;
+}
+
+
+/**
+ * Splits a cell name like AB29 into ['AB', 29]
+ * @param cellName 
+ * @returns 
+ */
+function splitCellName(cellName: string) : [string, number] { //findIndexOfNumber(str) {
+    let ind = cellName.length; // init to avoid error message on potentially undefined
+    for (let i=0; i<cellName.length; i++) {
+        if(numbers.includes(cellName[i])) {
+            ind = i;
+            break;
+        }
+    }
+    if (!ind) {
+        debug(`input ${cellName} doesn't contain both letters and numbers`);
+    }
+    let letter = cellName.substring(0, ind);
+    let number = cellName.substring(ind);
+    // debug(`letter: ${letter}, number: ${number}`);
+    return [letter, parseInt(number)];
+}
+
+
+/**
+ * Returns the letter part of the name of the next cell in row. Assumes last possible data cell is 'ZZ--'
+ * @param curLetter 
+ * @returns 
+ */
+function getNextLetterInRow(curLetter: string) {
+    let newLetter;
+    if (curLetter == 'ZZ') {
+        debug('reached last possible column ZZ');
+        newLetter = null;
+    } else if (curLetter == 'Z') {
+        newLetter = 'AA';
+    } else if (curLetter[1] == 'Z') { // eg. BZ to CA
+        let indexOfFirstLetter = letters.findIndex((testLet)=> testLet == curLetter[0]);
+        newLetter = letters[indexOfFirstLetter+1] + 'A';
+    } else if (curLetter.length == 2) {
+        let indexOfSecondLetter = letters.findIndex((testLet)=> testLet==curLetter[1]);
+        newLetter = curLetter[0] + letters[indexOfSecondLetter+1];
+    } else { // single letter to be incremented
+        let indexOfLetter = letters.findIndex((testLet)=> testLet==curLetter);
+        newLetter = letters[indexOfLetter+1];
+    }
+    // debug(`newLetter: ${newLetter}`);
+    return newLetter;
+}
+
+/////////////// -----------------
+
+
+function iterateDataRows() {
+    // split cell name to letter and number
+    let [startCellLetter, startCellNumber] = splitCellName(startCell);
+    let curRowNumber = startCellNumber + 1;
+    let rowsMissingData = [];
+    // track data by keys:parentLevelName, then name to find duplicates in same parent electoral area
+    let dataMap = {};
+    let dataArray = [];
+    let continueCondition;
+    const infiniteBound = 1e6; // upper bound to guard against infinite loop
+    let numRows = 0;
+    do {
+
+        //
+        numRows++;
+        curRowNumber++;
+    } while (continueCondition && curRowNumber <= infiniteBound)
+}

@@ -58,7 +58,7 @@ dependencies:
     version: 1.0.9
   shared-lib:
     specifier: github:Election-Audits/shared-lib
-    version: github.com/Election-Audits/shared-lib/976b3d454915ab1c5a1462427dc6b09ccd56538a
+    version: github.com/Election-Audits/shared-lib/99218a0e8f37ebca71a47e78e385c5bb8c24ef88
   xlsx:
     specifier: ^0.18.5
     version: 0.18.5
@@ -1708,8 +1708,8 @@ packages:
     resolution: {integrity: sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==}
     dev: false
 
-  github.com/Election-Audits/shared-lib/976b3d454915ab1c5a1462427dc6b09ccd56538a:
-    resolution: {tarball: https://codeload.github.com/Election-Audits/shared-lib/tar.gz/976b3d454915ab1c5a1462427dc6b09ccd56538a}
+  github.com/Election-Audits/shared-lib/99218a0e8f37ebca71a47e78e385c5bb8c24ef88:
+    resolution: {tarball: https://codeload.github.com/Election-Audits/shared-lib/tar.gz/99218a0e8f37ebca71a47e78e385c5bb8c24ef88}
     name: shared-lib
     version: 1.0.0
     dependencies:

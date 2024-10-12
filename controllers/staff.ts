@@ -5,7 +5,7 @@ import { electoralLevelsModel } from "../db/models/others";
 import { electoralAreaModel } from "../db/models/electoral-area";
 import { Request, Response, NextFunction } from "express";
 import { electoralAreaSchema } from "../utils/joi";
-import { saveExcelDoc } from "./files";
+import { saveExcelDoc, getDataFromExcel, validateExcel } from "./files";
 
 
 
@@ -71,6 +71,12 @@ export async function postElectoralAreaBulk(req: Request, res: Response, next: N
     // save excel document
     await saveExcelDoc(req,res,next);
     // validate contents of excel document. columns matching 
+    let sheetData = await getDataFromExcel(req.myFileName);
+    const requiredColumns = ['name', 'level', 'parentLevelName'];
+    await validateExcel(sheetData, requiredColumns);
 
 }
 
+
+// function excelRowsToDataObjects() {
+// }
