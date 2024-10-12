@@ -67,3 +67,14 @@ passport.authenticate('staff-cookie', {session: false}),
     })
     .catch((err)=> endpointError(err,req,res));
 });
+
+
+/*
+BULK add of electoral areas
+*/
+router.post('/electoral-area/bulk',
+passport.authenticate('staff-cookie', {session: false}),
+(req,res,next)=>{
+    debug('received request to POST /electoral-area/bulk');
+    
+});

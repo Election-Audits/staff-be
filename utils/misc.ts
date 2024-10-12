@@ -1,5 +1,8 @@
 import i18next from "i18next";
 import * as english from "shared-lib/locales/en.json";
+import * as fs from "fs";
+const debug = require('debug')('ea:utils-misc');
+debug.log = console.log.bind(console);
 
 
 /* constants */
@@ -18,3 +21,21 @@ i18next.init({
 });
 //.then(()=>{});
 
+
+/**
+ * Ensure that a directory exists on a filesystem before writing a file to it
+ * @param dirPath 
+ * @returns 
+ */
+export function ensureDirExists(dirPath: string) : Promise<void> {
+    let options = {recursive: true};
+    return new Promise((resolve, reject)=>{
+        fs.mkdir(dirPath, options, (err)=>{
+            if (!err || err.code === 'EEXIST') resolve();
+            else {
+                debug('mkdir err: \n', err);
+                reject(err);
+            }
+        });
+    });
+}

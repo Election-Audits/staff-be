@@ -5,6 +5,7 @@ import { electoralLevelsModel } from "../db/models/others";
 import { electoralAreaModel } from "../db/models/electoral-area";
 import { Request, Response, NextFunction } from "express";
 import { electoralAreaSchema } from "../utils/joi";
+import { saveExcelDoc } from "./files";
 
 
 
@@ -58,3 +59,18 @@ export async function postElectoralArea(req: Request, res: Response, next: NextF
     let electoralArea = new electoralAreaModel(body);
     await electoralArea.save(); // .create
 }
+
+
+/**
+ * Bulk add of electoral areas using upload of excel file
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function postElectoralAreaBulk(req: Request, res: Response, next: NextFunction) {
+    // save excel document
+    await saveExcelDoc(req,res,next);
+    // validate contents of excel document. columns matching 
+
+}
+

@@ -38,6 +38,7 @@
     "nodemailer": "^6.9.15",
     "passport": "^0.7.0",
     "passport-cookie": "^1.0.9",
-    "shared-lib": "github:Election-Audits/shared-lib"
+    "shared-lib": "github:Election-Audits/shared-lib",
+    "xlsx": "^0.18.5"
   }
 }
