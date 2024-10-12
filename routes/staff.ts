@@ -12,7 +12,7 @@ import cookieParser from "cookie-parser";
 import { secrets , checkSecretsReturned } from "../utils/infisical";
 import { BUILD_TYPES } from "shared-lib/constants";
 import { staffSession } from "../utils/session";
-import { getElectoralLevels } from "../controllers/staff";
+import { getElectoralLevels, postElectoralArea } from "../controllers/staff";
 
 
 const router = express.Router({ mergeParams: true });
@@ -61,5 +61,9 @@ router.post('/electoral-area',
 passport.authenticate('staff-cookie', {session: false}),
 (req,res,next)=>{
     debug('received request to POST /electoral-area...');
-
+    postElectoralArea(req,res,next)
+    .then(()=>{
+        res.status(200).end()
+    })
+    .catch((err)=> endpointError(err,req,res));
 });

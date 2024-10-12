@@ -18,7 +18,7 @@ async function setup() {
     for (let db of dbs) {
         if (db == 'eaudit') continue;
         // setup electoralAreaModel
-        electoralAreaModel = databaseConns.eaudit.model
+        electoralAreaModel = databaseConns[db].model
         <ElectoralAreaDocument, mongoose.PaginateModel<ElectoralAreaDocument> >
         ("ElectoralArea", electoralAreaSchema, "ElectoralAreas");
     }
@@ -31,13 +31,15 @@ const SchemaTypes = mongoose.SchemaTypes;
 
 // ElectoralArea Schema
 const electoralAreaSchema = new Schema({
-    name: { // e.g Tema Central. full text search, unique
+    name: SchemaTypes.String, // e.g Tema Central
+    nameLowerCase: { 
         type: SchemaTypes.String,
         unique: true
     },
     level: {
         type: SchemaTypes.String, // e.g. constituency
-        required: true
+        required: true,
+        index: true
     },
     parentLevelId: {
         type: SchemaTypes.String, // id of Greater Accra region
@@ -53,12 +55,12 @@ const electoralAreaSchema = new Schema({
 });
 
 // create a text index to enable search by text
-// electoralAreaSchema.index({name: 'text'}); TODO: use elasticsearch or similar service instead
-
+// electoralAreaSchema.index({nameLowerCase: 'text'}); TODO: use elasticsearch or similar service instead
 
 /////////////////
 interface ElectoralAreaData {
     name: string,
+    nameLowerCase: string,
     level: string,
     parentLevelId: string,
     parentLevelName: string,

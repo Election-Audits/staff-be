@@ -31,13 +31,30 @@ export async function getElectoralLevels(req: Request, res: Response, next: Next
  */
 export async function postElectoralArea(req: Request, res: Response, next: NextFunction) {
     // check input
-    let { error } = await electoralAreaSchema.validate(req.body);
+    let body = req.body;
+    let { error } = await electoralAreaSchema.validate(body);
     if (error) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
     }
-    // ?? ensure that the parentLevelName exists in electoralLevels ??
-    // If parentLevelName not set, then it is the highest level i.e country, there should be only one area of highest
-    // level. If the 'level' is the lowest, then it's a polling station (a unit for which results can be uploaded)
-    
+    body.nameLowerCase = body.name.toLowerCase(); // add nameLowerCase for easy consistent searching
+    // ensure that the parentLevelName exists in electoralLevels
+    if (body.parentLevelName) { // adding other electoral area apart from the country
+        let record = await electoralAreaModel.findOne({nameLowerCase: body.parentLevelName.toLowerCase()});
+        if (!record) {
+            return Promise.reject({errMsg: i18next.t('parent_area_not_exist')});
+        }
+    } else { // adding the country. There should be exactly one record of this
+        // Ensure it doesn't already exist. get electoralLevels
+        let electoralLevels = await electoralLevelsModel.findOne();
+        let highestElectoralLevel = electoralLevels?.levels[0].name;
+        let highestElectoralArea = await electoralAreaModel.findOne({level: highestElectoralLevel});
+        debug('highestElectoralArea: ', highestElectoralArea);
+        if (highestElectoralArea) { // country record already exists. Can only be one
+            return Promise.reject({errMsg: i18next.t('entity_already_exists')});
+        }
+    }
+    // save electoral area
+    let electoralArea = new electoralAreaModel(body);
+    await electoralArea.save(); // .create
 }
