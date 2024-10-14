@@ -100,13 +100,13 @@ export async function getDataFromExcel(filePath: string) {
  * validate that an excel sheet has the right columns
  * @param worksheet 
  * @param requiredColumns 
- * @returns 
+ * @returns number of columns
  */
 export async function validateExcel(worksheet: XLSX.WorkSheet, requiredColumns: string[]) {
     // the columns in the worksheet must contain the expected database fields (name, parentLevel, etc.)
     // NB: assume the header starts at cell A3, ie the first two rows can be used for description, but data starts
     // from row 3
-    let headerRow = getRowData(startCell, worksheet);
+    let headerRow = getRowData(startCell, worksheet, null);
     // check if any columns are missing
     let missingColumns = [];
     for (let requiredCol of requiredColumns) {
@@ -118,6 +118,7 @@ export async function validateExcel(worksheet: XLSX.WorkSheet, requiredColumns: 
         let errMsg = i18next.t('missing_columns') +' '+ missingColumns.join(', ');
         return Promise.reject({errMsg});
     }
+    return headerRow.length;
 }
 
 
@@ -131,23 +132,27 @@ const letters =
 
 /**
  * Returns a row of data
- * @param startCell 
- * @param worksheet 
+ * @param startCell startCell e.g 'A3'
+ * @param worksheet
+ * @param expectedNumColumns expected number of columns
  * @returns 
  */
-function getRowData(startCell: string, worksheet: XLSX.WorkSheet) {
+function getRowData(startCell: string, worksheet: XLSX.WorkSheet, expectedNumColumns: number | null) {
     let [startLetter, rowNumber] = splitCellName(startCell);
-    let curCellLetter : string | null = startLetter; //let curCellNumber = parseInt(startNumber);
-    let cellData;
+    let curCellLetter : string | null = startLetter;
     let data = [];
+    let continueCondition : boolean; // condition for continuing while loop
+    let numElements = 0;
     do {
         let ref = curCellLetter + rowNumber;
-        cellData = worksheet[ref]?.v;
+        let cellData = worksheet[ref]?.v;
         data.push(cellData); //  if (cellData) 
         //
+        numElements++;
         curCellLetter = getNextLetterInRow(curCellLetter);
-        //ref = startLetter + parseInt()
-    } while (cellData && curCellLetter); // TODO: use end column to set bounds
+        continueCondition = expectedNumColumns ? (numElements < expectedNumColumns) : cellData;
+    } while (continueCondition && curCellLetter); //  
+    // NB: curCellLetter null check in while condition to ensure logic in body uses right type
     return data;
 }
 
@@ -204,21 +209,74 @@ function getNextLetterInRow(curLetter: string) {
 /////////////// -----------------
 
 
-function iterateDataRows() {
+function iterateDataRows(worksheet: XLSX.WorkSheet, expectedNumColumns: number, 
+    expectedHeaderMap: {[key: string]: number}) {
     // split cell name to letter and number
     let [startCellLetter, startCellNumber] = splitCellName(startCell);
     let curRowNumber = startCellNumber + 1;
     let rowsMissingData = [];
-    // track data by keys:parentLevelName, then name to find duplicates in same parent electoral area
+    // track data by keys: parentLevelName, then name, to find duplicates in same parent electoral area
     let dataMap = {};
     let dataArray = [];
+    let expectedHeaders = Object.keys(expectedHeaderMap);
+    let numExpectedHeaders = expectedHeaders.length;
     let continueCondition;
     const infiniteBound = 1e6; // upper bound to guard against infinite loop
     let numRows = 0;
     do {
+        let startCellTmp = startCellLetter + curRowNumber;
+        let rowData = getRowData(startCellTmp, worksheet, expectedNumColumns);
+        // check if this row is missing data
+        let { isMissingData, numMissingColumns } = checkRowMissingData(rowData, expectedHeaderMap);
+        if (isMissingData) {
+            debug('row with missing data: ', rowData);
+            rowsMissingData.push(curRowNumber); // number
+        }
+        // transform the row data into an object keyed by column name
+        let obj : {[key: string]: any} = {};
+        for (let header of expectedHeaders) {
+            let ind = expectedHeaderMap[header];
+            obj[header] = rowData[ind]; 
+        }
+        dataArray.push(obj);
+        // also write in data map to ensure no duplicates in data
+        // if (!dataMap[obj.parentLevelName]) dataMap[obj.parentLevelName] = {};
+
 
         //
+        continueCondition = numMissingColumns < numExpectedHeaders;
         numRows++;
         curRowNumber++;
     } while (continueCondition && curRowNumber <= infiniteBound)
+}
+
+
+/**
+ * check if a row is missing any data from expected columns
+ * @param rowData data in a row of an excel sheet
+ * @param expectedHeaderMap map with key: headerName, and value: index of its column in header row
+ * @returns 
+ */
+function checkRowMissingData(rowData: string[], expectedHeaderMap: {[index: string]: number}) {
+    //let isMissingData = false;
+    let expectedHeaders = Object.keys(expectedHeaderMap);
+    let numMissingColumns = 0;
+    let missingStr = `missing value in column(s): `;
+    // debug('rowData: ', rowData);
+    // NB: check for missing columns won't work until getRowData uses last refCell to iterate a row
+    // It currently stops after seeing the first empty cell
+    for (let expHeader of expectedHeaders) {
+        let index = expectedHeaderMap[expHeader];
+        let val = rowData[index]; // NB: rowData already accessed .v ?.v;
+        if (!val) { // val == null || 
+            missingStr += `${expHeader}, `;
+            numMissingColumns++;
+        }
+    }
+    let isMissingData = numMissingColumns > 0;
+    if (isMissingData) debug(missingStr);
+    return {
+        isMissingData, 
+        numMissingColumns
+    };
 }
