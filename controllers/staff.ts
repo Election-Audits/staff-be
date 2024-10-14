@@ -77,7 +77,8 @@ export async function postElectoralAreaBulk(req: Request, res: Response, next: N
     let sheetData = await getDataFromExcel(filePath);
     const requiredColumns = ['name', 'level', 'parentLevelName'];
     let { numHeaders, expectedHeaderMap } = await validateExcel(sheetData, requiredColumns);
-    let dataArr = await iterateDataRows(sheetData, numHeaders, expectedHeaderMap);
+    let dataArr = iterateDataRows(sheetData, numHeaders, expectedHeaderMap); // await
+    await checkDuplicatesElectoralAreaBulk(dataArr);
     // transform each data element to match database schema (add fields)
     // TODO: special consideration if adding regions
     dataArr = dataArr.map((el)=>{
@@ -89,5 +90,30 @@ export async function postElectoralAreaBulk(req: Request, res: Response, next: N
 }
 
 
-// function excelRowsToDataObjects() {
-// }
+/**
+ * Ensure that there are no duplicates of electoral area data in uploaded xlsx file
+ * @param rowsArray 
+ * @returns 
+ */
+async function checkDuplicatesElectoralAreaBulk(rowsArray: {[key: string]: any}[]) { // ElectoralAreaData
+    // track data by keys: parentLevelName, then name, to find duplicates in same parent electoral area
+    let dataMap: {[key: string]: {[key: string]: object}} = {};
+    let duplicates = []; // keep track of duplicates
+    for (let rowObj of rowsArray) {
+        // also write in data map to ensure no duplicates in data
+        let parentNameLowerCase = rowObj.parentLevelName?.toLowerCase();
+        let myNameLowerCase = rowObj.name.toLowerCase();
+        // init parentLevelName store of electoral areas if doesn't exist
+        if (!dataMap[parentNameLowerCase]) dataMap[parentNameLowerCase] = {}; // toLowerCase?
+        if (dataMap[parentNameLowerCase][myNameLowerCase]) { // record already exists
+            duplicates.push(rowObj.name);
+        }
+        dataMap[parentNameLowerCase][myNameLowerCase] = rowObj; // add row object to data map
+    }
+    //
+    // reject with error if there is duplicate data in excel sheet
+    if (duplicates.length > 0) {
+        let errMsg = i18next.t('duplicates_in_input') +' '+ duplicates;
+        return Promise.reject({errMsg});
+    }
+}

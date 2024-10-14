@@ -221,15 +221,12 @@ function getNextLetterInRow(curLetter: string) {
  * @param expectedHeaderMap map of header name to column index
  * @returns 
  */
-export async function iterateDataRows(worksheet: XLSX.WorkSheet, expectedNumColumns: number, 
+export function iterateDataRows(worksheet: XLSX.WorkSheet, expectedNumColumns: number, 
     expectedHeaderMap: {[key: string]: number}) {
     // split cell name to letter and number
     let [startCellLetter, startCellNumber] = splitCellName(startCell);
     let curRowNumber = startCellNumber + 1;
     let rowsMissingData = [];
-    // track data by keys: parentLevelName, then name, to find duplicates in same parent electoral area
-    let dataMap: {[key: string]: {[key: string]: object}} = {}; // {[key: string]: object}
-    let duplicates = []; // keep track of duplicates
     let dataArray = [];
     let expectedHeaders = Object.keys(expectedHeaderMap);
     let numExpectedHeaders = expectedHeaders.length; // debug(`numExpectedHeaders: ${numExpectedHeaders}`);
@@ -254,27 +251,12 @@ export async function iterateDataRows(worksheet: XLSX.WorkSheet, expectedNumColu
         }
         // debug('row object: ', rowObj);
         if (!isMissingData) dataArray.push(rowObj);
-        // also write in data map to ensure no duplicates in data
-        // dataMap keyed by parentLevelName, and then name
-        let parentNameLowerCase = rowObj.parentLevelName?.toLowerCase();
-        // init parentLevelName store of electoral areas if doesn't exist
-        if (!dataMap[parentNameLowerCase]) dataMap[parentNameLowerCase] = {}; // toLowerCase?
-        if (dataMap[parentNameLowerCase][rowObj.name]) { // record already exists
-            duplicates.push(rowObj.name);
-        }
-        dataMap[parentNameLowerCase][rowObj.name] = rowObj; // add row object to data map
-
         //
         continueCondition = numMissingColumns < numExpectedHeaders;
         numRows++;
         curRowNumber++;
     } while (continueCondition && curRowNumber <= infiniteBound);
     // debug('data array: ', dataArray);
-    // reject with error if there is duplicate data in excel sheet
-    if (duplicates.length > 0) {
-        let errMsg = i18next.t('duplicates_in_input') +' '+ duplicates;
-        return Promise.reject({errMsg});
-    }
     return dataArray;
 }
 
