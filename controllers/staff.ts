@@ -5,7 +5,9 @@ import { electoralLevelsModel } from "../db/models/others";
 import { electoralAreaModel } from "../db/models/electoral-area";
 import { Request, Response, NextFunction } from "express";
 import { electoralAreaSchema } from "../utils/joi";
-import { saveExcelDoc, getDataFromExcel, validateExcel } from "./files";
+import { saveExcelDoc, getDataFromExcel, validateExcel, iterateDataRows } from "./files";
+import { filesDir } from "../utils/misc";
+import * as path from "path";
 
 
 
@@ -70,11 +72,20 @@ export async function postElectoralArea(req: Request, res: Response, next: NextF
 export async function postElectoralAreaBulk(req: Request, res: Response, next: NextFunction) {
     // save excel document
     await saveExcelDoc(req,res,next);
-    // validate contents of excel document. columns matching 
-    let sheetData = await getDataFromExcel(req.myFileName);
+    // validate contents of excel document. columns matching
+    let filePath = path.join(filesDir, req.myFileName);
+    let sheetData = await getDataFromExcel(filePath);
     const requiredColumns = ['name', 'level', 'parentLevelName'];
-    await validateExcel(sheetData, requiredColumns);
-
+    let { numHeaders, expectedHeaderMap } = await validateExcel(sheetData, requiredColumns);
+    let dataArr = await iterateDataRows(sheetData, numHeaders, expectedHeaderMap);
+    // transform each data element to match database schema (add fields)
+    // TODO: special consideration if adding regions
+    dataArr = dataArr.map((el)=>{
+        el.nameLowerCase = el.name.toLowerCase();
+        return el;
+    });
+    // perform a bulk write to database
+    await electoralAreaModel.collection.insertMany(dataArr);
 }
 
 

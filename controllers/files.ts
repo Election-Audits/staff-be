@@ -8,7 +8,7 @@ import * as fs from "fs";
 import * as util from "util";
 import { Request, Response, NextFunction } from "express";
 import i18next from "i18next";
-import { ensureDirExists } from "../utils/misc";
+import { ensureDirExists, filesDir } from "../utils/misc";
 import * as XLSX from "xlsx";
 // import { REPLACE_STRING } from "shared-lib/constants";
 
@@ -17,8 +17,6 @@ import * as XLSX from "xlsx";
 
 const maxFileSize = 20e6; // 20 MB
 
-// directory for temp upload of excel files for getting data from
-const filesDir = path.join(__dirname,'..','..', 'files', 'staff');
 
 
 /**
@@ -66,7 +64,7 @@ const storage = multer.diskStorage({
             let errMsg = i18next.t('illegal_file_extension');
             cb(new Error(errMsg), ''); // {errMsg}. todo
         }
-        let fileName = req.user?.email + ext; //file.originalname;
+        let fileName = req.user?.email +'.'+ ext; //file.originalname;
         req.myFileName = fileName;
         return cb(null, fileName);
     }
@@ -109,8 +107,13 @@ export async function validateExcel(worksheet: XLSX.WorkSheet, requiredColumns: 
     let headerRow = getRowData(startCell, worksheet, null);
     // check if any columns are missing
     let missingColumns = [];
+    // map of expected header name to column index
+    let expectedHeaderMap : {[index: string]: number} = {}; // index signature
     for (let requiredCol of requiredColumns) {
-        if (!headerRow.includes(requiredCol)) missingColumns.push(requiredCol);
+        //if (!headerRow.includes(requiredCol)) missingColumns.push(requiredCol);
+        let ind = headerRow.findIndex((headerItem)=> requiredCol == headerItem);
+        if (ind == -1) missingColumns.push(requiredCol);
+        expectedHeaderMap[requiredCol] = ind;
     }
     // send error message if missing column(s)
     if (missingColumns.length > 0) {
@@ -118,7 +121,10 @@ export async function validateExcel(worksheet: XLSX.WorkSheet, requiredColumns: 
         let errMsg = i18next.t('missing_columns') +' '+ missingColumns.join(', ');
         return Promise.reject({errMsg});
     }
-    return headerRow.length;
+    return {
+        numHeaders: headerRow.length,
+        expectedHeaderMap
+    };
 }
 
 
@@ -208,18 +214,25 @@ function getNextLetterInRow(curLetter: string) {
 
 /////////////// -----------------
 
-
-function iterateDataRows(worksheet: XLSX.WorkSheet, expectedNumColumns: number, 
+/**
+ * steps through a worksheet to obtain data rows
+ * @param worksheet 
+ * @param expectedNumColumns 
+ * @param expectedHeaderMap map of header name to column index
+ * @returns 
+ */
+export async function iterateDataRows(worksheet: XLSX.WorkSheet, expectedNumColumns: number, 
     expectedHeaderMap: {[key: string]: number}) {
     // split cell name to letter and number
     let [startCellLetter, startCellNumber] = splitCellName(startCell);
     let curRowNumber = startCellNumber + 1;
     let rowsMissingData = [];
     // track data by keys: parentLevelName, then name, to find duplicates in same parent electoral area
-    let dataMap = {};
+    let dataMap: {[key: string]: {[key: string]: object}} = {}; // {[key: string]: object}
+    let duplicates = []; // keep track of duplicates
     let dataArray = [];
     let expectedHeaders = Object.keys(expectedHeaderMap);
-    let numExpectedHeaders = expectedHeaders.length;
+    let numExpectedHeaders = expectedHeaders.length; // debug(`numExpectedHeaders: ${numExpectedHeaders}`);
     let continueCondition;
     const infiniteBound = 1e6; // upper bound to guard against infinite loop
     let numRows = 0;
@@ -228,26 +241,41 @@ function iterateDataRows(worksheet: XLSX.WorkSheet, expectedNumColumns: number,
         let rowData = getRowData(startCellTmp, worksheet, expectedNumColumns);
         // check if this row is missing data
         let { isMissingData, numMissingColumns } = checkRowMissingData(rowData, expectedHeaderMap);
+        // debug(`numMissingColumns: ${numMissingColumns}`);
         if (isMissingData) {
             debug('row with missing data: ', rowData);
             rowsMissingData.push(curRowNumber); // number
         }
         // transform the row data into an object keyed by column name
-        let obj : {[key: string]: any} = {};
+        let rowObj : {[key: string]: any} = {};
         for (let header of expectedHeaders) {
             let ind = expectedHeaderMap[header];
-            obj[header] = rowData[ind]; 
+            rowObj[header] = rowData[ind]; 
         }
-        dataArray.push(obj);
+        // debug('row object: ', rowObj);
+        if (!isMissingData) dataArray.push(rowObj);
         // also write in data map to ensure no duplicates in data
-        // if (!dataMap[obj.parentLevelName]) dataMap[obj.parentLevelName] = {};
-
+        // dataMap keyed by parentLevelName, and then name
+        let parentNameLowerCase = rowObj.parentLevelName?.toLowerCase();
+        // init parentLevelName store of electoral areas if doesn't exist
+        if (!dataMap[parentNameLowerCase]) dataMap[parentNameLowerCase] = {}; // toLowerCase?
+        if (dataMap[parentNameLowerCase][rowObj.name]) { // record already exists
+            duplicates.push(rowObj.name);
+        }
+        dataMap[parentNameLowerCase][rowObj.name] = rowObj; // add row object to data map
 
         //
         continueCondition = numMissingColumns < numExpectedHeaders;
         numRows++;
         curRowNumber++;
-    } while (continueCondition && curRowNumber <= infiniteBound)
+    } while (continueCondition && curRowNumber <= infiniteBound);
+    // debug('data array: ', dataArray);
+    // reject with error if there is duplicate data in excel sheet
+    if (duplicates.length > 0) {
+        let errMsg = i18next.t('duplicates_in_input') +' '+ duplicates;
+        return Promise.reject({errMsg});
+    }
+    return dataArray;
 }
 
 

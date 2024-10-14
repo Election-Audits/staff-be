@@ -3,11 +3,15 @@ import * as english from "shared-lib/locales/en.json";
 import * as fs from "fs";
 const debug = require('debug')('ea:utils-misc');
 debug.log = console.log.bind(console);
+import * as path from "path";
 
 
 /* constants */
 export const auditDbName = 'eaudit';
 export const staffCookieMaxAge = 5*24*3600*1000; // max age in milliseconds (5 days)
+
+// directory for temp upload of excel files for getting data from
+export const filesDir = path.join(__dirname, '..','..','..', 'files', 'staff');
 
 // initialize i18next
 i18next.init({
