@@ -86,3 +86,10 @@ export const postElectionSchema = Joi.object({
         electoralLevelValue: Joi.string().max(100)
     }
 });
+
+
+// get elections
+export const getElectionsSchema = Joi.object({
+    pg: Joi.number(),
+    type: Joi.string().max(50)
+});

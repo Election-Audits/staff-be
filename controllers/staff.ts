@@ -3,10 +3,11 @@ debug.log = console.log.bind(console);
 import i18next from "i18next";
 import { electoralLevelsModel } from "../db/models/others";
 import { electoralAreaModel } from "../db/models/electoral-area";
+import { electionModel } from "../db/models/election";
 import { Request, Response, NextFunction } from "express";
-import { electoralAreaSchema, getElectoralAreaSchema } from "../utils/joi";
+import { electoralAreaSchema, getElectoralAreaSchema, getElectionsSchema } from "../utils/joi";
 import { saveExcelDoc, getDataFromExcel, validateExcel, iterateDataRows } from "./files";
-import { filesDir } from "../utils/misc";
+import { filesDir, pageLimit, getQueryNumberWithDefault } from "../utils/misc";
 import * as path from "path";
 
 
@@ -135,4 +136,30 @@ export async function getElectoralArea(req: Request, res: Response, next: NextFu
     let areaId = req.params.areaId;
     let electoralArea = await electoralAreaModel.findById({_id: areaId});
     return electoralArea;
+}
+
+
+/**
+ * Get all upcoming elections in a country
+ * @param req 
+ * @param res 
+ * @param next 
+ * @returns 
+ */
+export async function getElections(req: Request, res: Response, next: NextFunction) {
+    // check input
+    let { error } = await getElectionsSchema.validate(req.query);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+    let page = getQueryNumberWithDefault(req.query?.pg); debug('page: ', page);
+    let type = req.query.type; // e.g. presidential
+    let filter: {'type'?: unknown} = {}; // query filter
+    if (type) filter.type = type;
+    // pagination options
+    let options = { page, limit: pageLimit };
+    let electionsRet = await electionModel.paginate(filter, options);
+    // debug('electionsRet: ', electionsRet);
+    return { results: electionsRet.docs };
 }

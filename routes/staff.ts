@@ -12,7 +12,8 @@ import cookieParser from "cookie-parser";
 import { secrets , checkSecretsReturned } from "../utils/infisical";
 import { BUILD_TYPES } from "shared-lib/constants";
 import { staffSession } from "../utils/session";
-import { getElectoralLevels, postElectoralArea, postElectoralAreaBulk, getElectoralArea } from "../controllers/staff";
+import { getElectoralLevels, postElectoralArea, postElectoralAreaBulk, getElectoralArea, getElections } 
+from "../controllers/staff";
 
 
 const router = express.Router({ mergeParams: true });
@@ -95,6 +96,22 @@ passport.authenticate('staff-cookie', {session: false}),
 (req,res,next)=>{
     debug('received request to GET /electoral-area/:areaId');
     getElectoralArea(req, res, next)
+    .then((data)=>{
+        return res.status(200).send(data);
+    })
+    .catch((err)=> endpointError(err, req, res));
+});
+
+
+/*
+GET upcoming elections for a country
+*/
+router.get('/elections',
+passport.authenticate('staff-cookie', {session: false}),
+(req,res,next)=>{
+    debug('received request to GET /elections...');
+    debug('query: ', req.query);
+    getElections(req,res,next)
     .then((data)=>{
         return res.status(200).send(data);
     })

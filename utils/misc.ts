@@ -9,6 +9,7 @@ import * as path from "path";
 /* constants */
 export const auditDbName = 'eaudit';
 export const staffCookieMaxAge = 5*24*3600*1000; // max age in milliseconds (5 days)
+export const pageLimit = 20;
 
 // directory for temp upload of excel files for getting data from
 export const filesDir = path.join(__dirname, '..','..','..', 'files', 'staff');
@@ -42,4 +43,16 @@ export function ensureDirExists(dirPath: string) : Promise<void> {
             }
         });
     });
+}
+
+
+/**
+ * Ensure that a query parameter yields a number, even when undefined
+ * @param queryIn a query parameter
+ * @returns 
+ */
+export function getQueryNumberWithDefault(queryIn: unknown) : number {
+    let queryAsNumber = parseInt(queryIn+'');
+    if (Number.isFinite(queryAsNumber)) return queryAsNumber;
+    else return 1; // start from page 1
 }
