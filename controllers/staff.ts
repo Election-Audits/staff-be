@@ -4,7 +4,7 @@ import i18next from "i18next";
 import { electoralLevelsModel } from "../db/models/others";
 import { electoralAreaModel } from "../db/models/electoral-area";
 import { Request, Response, NextFunction } from "express";
-import { electoralAreaSchema } from "../utils/joi";
+import { electoralAreaSchema, getElectoralAreaSchema } from "../utils/joi";
 import { saveExcelDoc, getDataFromExcel, validateExcel, iterateDataRows } from "./files";
 import { filesDir } from "../utils/misc";
 import * as path from "path";
@@ -116,4 +116,23 @@ async function checkDuplicatesElectoralAreaBulk(rowsArray: {[key: string]: any}[
         let errMsg = i18next.t('duplicates_in_input') +' '+ duplicates;
         return Promise.reject({errMsg});
     }
+}
+
+
+/**
+ * Get a specific electoral area e.g a specific polling station, constituency etc.
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function getElectoralArea(req: Request, res: Response, next: NextFunction) {
+    // check input
+    let { error } = await getElectoralAreaSchema.validate(req.params);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+    let areaId = req.params.areaId;
+    let electoralArea = await electoralAreaModel.findById({_id: areaId});
+    return electoralArea;
 }

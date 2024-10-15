@@ -66,3 +66,9 @@ export const electoralAreaSchema = Joi.object({
     },
     locationDetails: Joi.string()
 });
+
+
+//
+export const getElectoralAreaSchema = Joi.object({
+    areaId: Joi.string().alphanum().max(30)
+});

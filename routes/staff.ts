@@ -12,7 +12,7 @@ import cookieParser from "cookie-parser";
 import { secrets , checkSecretsReturned } from "../utils/infisical";
 import { BUILD_TYPES } from "shared-lib/constants";
 import { staffSession } from "../utils/session";
-import { getElectoralLevels, postElectoralArea, postElectoralAreaBulk } from "../controllers/staff";
+import { getElectoralLevels, postElectoralArea, postElectoralAreaBulk, getElectoralArea } from "../controllers/staff";
 
 
 const router = express.Router({ mergeParams: true });
@@ -79,6 +79,24 @@ passport.authenticate('staff-cookie', {session: false}),
     postElectoralAreaBulk(req, res, next)
     .then(()=>{
         res.status(200).end()
+    })
+    .catch((err)=> endpointError(err, req, res));
+});
+
+
+// TODO: Update a specific electoral area
+
+
+/*
+GET a specific electoral area
+*/
+router.get('/electoral-area/:areaId',
+passport.authenticate('staff-cookie', {session: false}),
+(req,res,next)=>{
+    debug('received request to GET /electoral-area/:areaId');
+    getElectoralArea(req, res, next)
+    .then((data)=>{
+        return res.status(200).send(data);
     })
     .catch((err)=> endpointError(err, req, res));
 });
