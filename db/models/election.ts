@@ -35,7 +35,8 @@ const electionSchema = new Schema({
     type: SchemaTypes.String,
     date: SchemaTypes.Date,
     electoralLevel: SchemaTypes.String,
-    electoralAreaId: SchemaTypes.String
+    electoralAreaId: SchemaTypes.String,
+    electoralAreaName: SchemaTypes.String
 });
 
 // add indexes
@@ -48,8 +49,9 @@ interface ElectionData {
     type: string,
     date: string,
     electoralLevel: string,
-    electoralAreaId: string
-}
+    electoralAreaId: string,
+    electoralAreaName: string
+};
 
 // declare a mongoose document based on a Typescript interface representing your schema
 interface ElectionDocument extends mongoose.Document, ElectionData {};

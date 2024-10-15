@@ -163,7 +163,10 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
     if (!body.multi?.includeAllValues) {
         debug('will add single election');
         body.multi = undefined; // not saving multi to db
-        body.date = electionDate; // 
+        body.date = electionDate; //
+        // add name of electoral area
+        let electoralArea = await electoralAreaModel.findById(body.electoralAreaId);
+        body.electoralAreaName = electoralArea?.name;
         await electionModel.create(body);
         return;
     }
@@ -203,7 +206,8 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
             type: body.type,
             date: electionDate,
             electoralLevel: electArea.level,
-            electoralAreaId: electArea._id
+            electoralAreaId: electArea._id,
+            electoralAreaName: electArea.name
         };
         return electData;
     });
