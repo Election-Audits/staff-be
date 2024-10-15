@@ -11,7 +11,7 @@ import { COOKIE_SECRET as cookieSecretEnv, BUILD } from "../utils/env";
 import cookieParser from "cookie-parser";
 import { secrets , checkSecretsReturned } from "../utils/infisical";
 import { BUILD_TYPES } from "shared-lib/constants";
-import { getStaffWithoutRoles, getStaffById, createElectoralLevels } from "../controllers/admin";
+import { getStaffWithoutRoles, getStaffById, createElectoralLevels, postElection } from "../controllers/admin";
 import { staffSession } from "../utils/session";
 
 
@@ -90,3 +90,17 @@ passport.authenticate('data-master-cookie', {session: false}),
     })
     .catch((err)=> endpointError(err,req,res));
 });
+
+
+/*
+create an election
+*/
+router.post('/election',
+passport.authenticate('data-master-cookie', {session: false}),
+(req,res,next)=>{
+    debug('received request to POST /election...');
+    postElection(req,res,next)
+    .then(()=> res.status(200).end())
+    .catch((err)=> endpointError(err, req, res));
+});
+

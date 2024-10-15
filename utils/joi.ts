@@ -72,3 +72,17 @@ export const electoralAreaSchema = Joi.object({
 export const getElectoralAreaSchema = Joi.object({
     areaId: Joi.string().alphanum().max(30)
 });
+
+
+// post election
+export const postElectionSchema = Joi.object({
+    type: Joi.string().max(50),
+    date: Joi.string().max(50),
+    electoralLevel: Joi.string().max(50), // e.g country, constituency
+    electoralAreaId: Joi.string().alphanum().max(30), // id of constituency
+    multi: {
+        includeAllValues: Joi.boolean(),
+        electoralLevel: Joi.string().max(50),
+        electoralLevelValue: Joi.string().max(100)
+    }
+});
