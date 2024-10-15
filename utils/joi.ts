@@ -93,3 +93,9 @@ export const getElectionsSchema = Joi.object({
     pg: Joi.number(),
     type: Joi.string().max(50)
 });
+
+
+// get a specific election
+export const getOneElectionSchema = Joi.object({
+    id: Joi.string().alphanum().max(30)
+});

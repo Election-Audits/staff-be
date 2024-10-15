@@ -5,7 +5,7 @@ import { electoralLevelsModel } from "../db/models/others";
 import { electoralAreaModel } from "../db/models/electoral-area";
 import { electionModel } from "../db/models/election";
 import { Request, Response, NextFunction } from "express";
-import { electoralAreaSchema, getElectoralAreaSchema, getElectionsSchema } from "../utils/joi";
+import { electoralAreaSchema, getElectoralAreaSchema, getElectionsSchema, getOneElectionSchema } from "../utils/joi";
 import { saveExcelDoc, getDataFromExcel, validateExcel, iterateDataRows } from "./files";
 import { filesDir, pageLimit, getQueryNumberWithDefault } from "../utils/misc";
 import * as path from "path";
@@ -163,3 +163,23 @@ export async function getElections(req: Request, res: Response, next: NextFuncti
     // debug('electionsRet: ', electionsRet);
     return { results: electionsRet.docs };
 }
+
+
+/**
+ * gets a specific election
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function getOneElection(req: Request, res: Response, next: NextFunction) {
+    // check input
+    let { error } = await getOneElectionSchema.validate(req.params);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+    let electionId = req.params.id;
+    let election = await electionModel.findById(electionId);
+    return election;
+}
+
