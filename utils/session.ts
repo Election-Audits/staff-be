@@ -8,10 +8,17 @@ import { eAuditMongoUrl } from "../db/mongoose";
 import { auditDbName, staffCookieMaxAge } from "./misc";
 import { secrets, checkSecretsReturned } from "./infisical";
 
+
 // create Mongo store
 // let store = MongoStore.create({
 //     mongoUrl: eAuditMongoUrl
 // });
+
+declare module 'express-session' {
+    interface SessionData {
+        email: string
+    }
+}
 
 // initialize session to set type
 export let staffSession = session({
@@ -41,7 +48,7 @@ async function setup() {
         },
         store,
         resave: false, // don't resave session unless modified.
-        saveUninitialized: true //TODO: false don't save empty sessions.
+        saveUninitialized: false // don't save empty sessions.
     });
 }
 

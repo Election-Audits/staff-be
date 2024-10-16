@@ -4,7 +4,7 @@ debug.log = console.log.bind(console);
 import { BUILD_TYPES } from "shared-lib/constants";
 import { BUILD, EMAIL_USER as emailUserEnv, EMAIL_PASSWORD as emailPasswordEnv } from "../utils/env";
 import nodemailer from "nodemailer";
-import { staffModel } from "../db/models";
+import { staffModel } from "../db/models/staff";
 import i18next from "i18next";
 import * as bcrypt from "bcrypt";
 import { secrets ,checkSecretsReturned } from "../utils/infisical";

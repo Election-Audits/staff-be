@@ -40,3 +40,62 @@ export const loginConfirmSchema = Joi.object({
     email: email.required(),
     code: Joi.string().alphanum().max(20).required()
 });
+
+
+export const getStaffByIdSchema = Joi.object({
+    staffId: Joi.string().alphanum().max(30)
+});
+
+
+// electoralLevels
+export const electoralLevelsSchema = Joi.object({
+    levels: Joi.array().items(
+        Joi.string().max(50)
+    )
+});
+
+
+// electoral areas
+export const electoralAreaSchema = Joi.object({
+    name: Joi.string().max(100),
+    level: Joi.string().max(50),
+    parentLevelName: Joi.string().max(100),
+    location: {
+        lon: Joi.number(),
+        lat: Joi.number()
+    },
+    locationDetails: Joi.string()
+});
+
+
+//
+export const getElectoralAreaSchema = Joi.object({
+    areaId: Joi.string().alphanum().max(30)
+});
+
+
+// post election
+export const postElectionSchema = Joi.object({
+    type: Joi.string().max(50),
+    date: Joi.string().max(50),
+    electoralLevel: Joi.string().max(50), // e.g country, constituency
+    electoralAreaId: Joi.string().alphanum().max(30), // id of constituency
+    multi: {
+        includeAllValues: Joi.boolean(),
+        electoralLevel: Joi.string().max(50),
+        electoralLevelValue: Joi.string().max(100)
+    }
+});
+
+
+// get elections
+export const getElectionsSchema = Joi.object({
+    pg: Joi.number(),
+    type: Joi.string().max(50)
+});
+
+
+// get a specific election
+export const getOneElectionSchema = Joi.object({
+    id: Joi.string().alphanum().max(30)
+});

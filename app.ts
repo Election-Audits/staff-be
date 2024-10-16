@@ -7,9 +7,12 @@ import express from "express";
 const debug = require('debug')('ea:app');
 debug.log = console.log.bind(console);
 import "./auth"; // passport setup
+import passport from "passport";
 
 
 import loginRouter from "./routes/login";
+import adminRouter from "./routes/admin";
+import staffRouter from "./routes/staff";
 
 
 const app = express();
@@ -25,5 +28,20 @@ app.get('/ping', (req,res,next)=>{
 });
 
 
+app.use(passport.initialize()); // initialize passport
+
 // mount routers
 app.use("/", loginRouter);
+app.use("/", adminRouter);
+app.use("/", staffRouter);
+
+
+// TODO: 400 handler
+
+
+app.use((err: RequestError,req: express.Request, res: express.Response, next: express.NextFunction)=>{
+    debug('error handler. err: ', err);
+    let status = err?.errMsg ? 400 : 500;
+    let body = err?.errMsg || 'Internal Server Error';
+    return res.status(status).send(body);
+});
