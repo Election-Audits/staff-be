@@ -106,3 +106,8 @@ export const postPartySchema = Joi.object({
     name: Joi.string().max(100),
     initials: Joi.string().max(20)
 });
+
+// objectId schema
+export const objectIdSchema = Joi.object({
+    id: Joi.string().alphanum().max(30)
+});

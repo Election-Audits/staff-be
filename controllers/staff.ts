@@ -5,8 +5,8 @@ import { electoralLevelsModel, partyModel } from "../db/models/others";
 import { electoralAreaModel } from "../db/models/electoral-area";
 import { electionModel } from "../db/models/election";
 import { Request, Response, NextFunction } from "express";
-import { electoralAreaSchema, getElectoralAreaSchema, getElectionsSchema, getOneElectionSchema, postPartySchema } 
-from "../utils/joi";
+import { electoralAreaSchema, getElectoralAreaSchema, getElectionsSchema, getOneElectionSchema, postPartySchema,
+objectIdSchema } from "../utils/joi";
 import { saveExcelDoc, getDataFromExcel, validateExcel, iterateDataRows } from "./files";
 import { filesDir, pageLimit, getQueryNumberWithDefault } from "../utils/misc";
 import * as path from "path";
@@ -212,4 +212,23 @@ export async function postParty(req: Request, res: Response, next: NextFunction)
 export async function getParties(req: Request, res: Response, next: NextFunction) {
     let parties = await partyModel.find();
     return parties;
+}
+
+
+/**
+ * GET a specific political party
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function getOneParty(req: Request, res: Response, next: NextFunction) {
+    // check input
+    let { error } = await objectIdSchema.validate(req.params);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+    //
+    let party = await partyModel.findById(req.params.id);
+    return party;
 }
