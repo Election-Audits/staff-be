@@ -15,6 +15,7 @@ async function setup() {
         if (db == 'eaudit') continue;
         // create models
         electoralLevelsModel = databaseConns[db].model("ElectoralLevels", electoralLevelsSchema, "ElectoralLevels");
+        partyModel = databaseConns[db].model("Party", partySchema, "Parties");
     }
 }
 
@@ -47,3 +48,14 @@ const electoralLevelsSchema = new Schema({
 // init model. Will be updated upon db connections in 'setup'
 export let electoralLevelsModel = mongoose.model("ElectoralLevels", electoralLevelsSchema, "ElectoralLevels");
 // --------------------
+
+// -------------------- Party Schema
+const partySchema = new Schema({
+    name: SchemaTypes.String,
+    initials: SchemaTypes.String
+});
+
+partySchema.index({initials: 1}, {unique: true});
+
+// init model. Will be updated upon db connections in 'setup'
+export let partyModel = mongoose.model("Party", partySchema, "Parties");

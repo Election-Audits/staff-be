@@ -99,3 +99,10 @@ export const getElectionsSchema = Joi.object({
 export const getOneElectionSchema = Joi.object({
     id: Joi.string().alphanum().max(30)
 });
+
+
+// Add a political pary
+export const postPartySchema = Joi.object({
+    name: Joi.string().max(100),
+    initials: Joi.string().max(20)
+});

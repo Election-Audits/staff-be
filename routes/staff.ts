@@ -12,8 +12,9 @@ import cookieParser from "cookie-parser";
 import { secrets , checkSecretsReturned } from "../utils/infisical";
 import { BUILD_TYPES } from "shared-lib/constants";
 import { staffSession } from "../utils/session";
-import { getElectoralLevels, postElectoralArea, postElectoralAreaBulk, getElectoralArea, getElections, getOneElection } 
-from "../controllers/staff";
+import { getElectoralLevels, postElectoralArea, postElectoralAreaBulk, getElectoralArea, getElections, getOneElection,
+postParty } from "../controllers/staff";
+import multer from "multer";
 
 
 const router = express.Router({ mergeParams: true });
@@ -133,3 +134,16 @@ passport.authenticate('staff-cookie', {session: false}),
     .catch((err)=> endpointError(err, req, res));
 });
 
+
+/*
+Add a political party
+*/
+router.post('/party',
+passport.authenticate('staff-cookie', {session: false}),
+multer().none(),
+(req,res,next)=>{
+    debug('received request to POST /party...');
+    postParty(req,res,next)
+    .then(()=> res.status(200).end())
+    .catch((err)=> endpointError(err,req,res));
+});
