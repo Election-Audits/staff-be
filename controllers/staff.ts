@@ -201,3 +201,15 @@ export async function postParty(req: Request, res: Response, next: NextFunction)
     //
     await partyModel.create(req.body);
 }
+
+
+/**
+ * Get all political parties
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function getParties(req: Request, res: Response, next: NextFunction) {
+    let parties = await partyModel.find();
+    return parties;
+}
