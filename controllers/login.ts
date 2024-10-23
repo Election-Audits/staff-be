@@ -68,6 +68,7 @@ export async function signup (req: express.Request, res: express.Response, next:
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")}); // todo printf
     }
+
     let email = body.email; debug('email: ', email);
     // First try to get record from db to check pre-approval
     let record = await staffModel.findOne({email}, {password: 0});
@@ -75,9 +76,11 @@ export async function signup (req: express.Request, res: express.Response, next:
     if (!record) return Promise.reject({errMsg: i18next.t("not_approved_signup")}); // , {lng}
     // if email already confirmed, user has already signed up
     if (record.emailConfirmed) return Promise.reject({errMsg: i18next.t("account_exists")});
+
     // Update record with body fields, then send confirmation email
-    delete body.email; // not updating email
+    body.email = undefined; // // not updating email. delete body.email;
     body.password = await bcrypt.hash(body.password, 12); // hash password
+
     // create a code to be sent by email
     let code = randomString({length: 12});
     let emailCodes_0 = record.emailCodes || [];
@@ -88,9 +91,11 @@ export async function signup (req: express.Request, res: express.Response, next:
         return codeAge < 2*verifyWindow;
     });
     body.emailCodes = emailCodes;
+
     await staffModel.updateOne({email}, {$set: body});
     debug(`code: ${code}`);
     if (BUILD == BUILD_TYPES.local) return;
+
     // send email if running on cloud
     debug('running on cloud, will send email');
     const info = await transporter.sendMail({
@@ -127,11 +132,13 @@ export async function signupConfirm(req: express.Request, res: express.Response,
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")}); // todo printf
     }
+
     // first get record from db
     let record = await staffModel.findOne({email});
     debug('record: ', record);
     // check if account already exists
     if (record?.emailConfirmed) return Promise.reject({errMsg: i18next.t("account_exists")});
+
     // search emailCodes array for a code that matches
     let dbCodes = record?.emailCodes || []; // {code: 0}
     let ind = dbCodes.findIndex((codeObj)=> codeObj.code == body.code);
@@ -143,8 +150,9 @@ export async function signupConfirm(req: express.Request, res: express.Response,
         debug(`code has expired: deltaT is ${deltaT/1000} seconds`);
         return Promise.reject({errMsg: i18next.t("expired_code")});
     }
+
     // At this point, code is equal, and within verification window. Update record
-    let update = {$set: {emailConfirmed: true}, $unset: {emailCodes: 1}};
+    let update = {$set: {emailConfirmed: true}}; // , $unset: {emailCodes: 1}
     await staffModel.updateOne({email}, update);
     // set cookie for authenticating future requests
     req.session.email = email;
@@ -167,15 +175,18 @@ export async function login(req: express.Request, res: express.Response, next: e
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")}); // todo printf
     }
+
     let record = await staffModel.findOne({email});
     debug('record: ', JSON.stringify(record));
     // Ensure user account exists
     if (!record || !record.emailConfirmed) {
         return Promise.reject({errMsg: i18next.t("account_not_exist")});
     }
+
     // check if password is equal
     let pwdEqual = await bcrypt.compare(''+body.password, record.password+'');
     if (!pwdEqual) return Promise.reject({errMsg: i18next.t("wrong_email_password")});
+    
     // Account exists and password correct. Create OTP to be sent by email
     let code = randomString({length: 8});
     let emailCodes_0 = record.emailCodes || [];
@@ -185,11 +196,14 @@ export async function login(req: express.Request, res: express.Response, next: e
         let codeAge = Date.now() - (x.createdAtms || 0);
         return codeAge < 2*verifyWindow;
     });
-    body.emailCodes = emailCodes;
+
+    //
     let update = {$set: {emailCodes}};
     await staffModel.updateOne({email}, update);
     debug(`code: ${code}`);
+
     if (BUILD == BUILD_TYPES.local) return;
+
     // send email if running on cloud
     debug('running on cloud, will send email');
     const info = await transporter.sendMail({
@@ -219,12 +233,14 @@ export async function loginConfirm(req: express.Request, res: express.Response, 
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")}); // todo printf
     }
+
     let record = await staffModel.findOne({email});
     // search emailCodes array for a code that matches
     let dbCodes = record?.emailCodes || [];
     let ind = dbCodes.findIndex((codeObj)=> codeObj.code == body.code);
     if (ind == -1) return Promise.reject({errMsg: i18next.t("wrong_code")});
     //assertNumber(ind);
+    
     let codeCreatedAt = record?.emailCodes[ind].createdAtms; // ind
     let deltaT = Date.now() - (codeCreatedAt || 0);
     if (deltaT > verifyWindow) {

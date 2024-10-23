@@ -82,6 +82,7 @@ export async function createElectoralLevels(req: Request, res: Response, next: N
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
     }
+
     let levelsIn : string[] = req.body.levels;
     // convert input electoral levels to lower case
     levelsIn = levelsIn.map((lvl)=> lvl.toLowerCase());
@@ -98,6 +99,7 @@ export async function createElectoralLevels(req: Request, res: Response, next: N
     record?.oldLevels.map((lvl)=>{
         oldLevelsObj_0[lvl.name+''] = lvl;
     });
+
     // iterate through input levels, create new level array. If level exists, use its existing uid.
     let levels = [];
     let uidsInLevels = record?.levels.map((lvl)=> lvl.uid || 0) || []; // todo: use asserts for uid
@@ -113,6 +115,7 @@ export async function createElectoralLevels(req: Request, res: Response, next: N
             maxUid++;
         }
     }
+
     // Now iterate through database levels, if a level in db not in input, move it to oldLevels
     let levels_0 = record?.levels || [];
     let oldLevels = record?.oldLevels || new mongoose.Types.DocumentArray<any>([]);
@@ -149,6 +152,7 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
     }
+
     // check if there's already an upcoming election of this type, for this electoralAreaId
     let { type, electoralAreaId } = body;
     let dateNow = new Date().toISOString();
@@ -158,9 +162,10 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
     if (existElections.length > 0) {
         return Promise.reject({errMsg: i18next.t('entity_already_exists')});
     }
+
     // add single election if multi field not set, else add bulk
     let electionDate = new Date(body.date).toISOString();
-    if (!body.multi?.includeAllValues) {
+    if (!body.multi?.includeAllValues) { // add single election
         debug('will add single election');
         body.multi = undefined; // not saving multi to db
         body.date = electionDate; //
@@ -170,6 +175,7 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
         await electionModel.create(body);
         return;
     }
+
     // Adding multiple elections, e.g creating parliamentary elections for all constituencies in a country
     debug('multi field set. Will add mulitple elections');
     // include all values of electoralLevel in multi.electoralLevelValue
@@ -184,6 +190,7 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
     if (startLevelInd == -1 || endLevelInd == -1) {
         return Promise.reject({errMsg: i18next.t('request_body_error')});
     }
+
     // step through the electoral levels
     let curElectoralValues = [ multi.electoralLevelValue.toLowerCase() ];
     let electoralAreas: {[key: string]: any}[] = [];
@@ -198,6 +205,7 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
         curElectoralValues = electoralAreas.map((el)=> el.nameLowerCase);
         // debug(`number(curElectoralValues): `, curElectoralValues.length);
     }
+    
     // electoralAreas is array of electoral areas for which elections should be created
     // debug('electoralAreas: ', electoralAreas);
     debug(`number of elections to create: ${electoralAreas.length}`);

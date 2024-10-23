@@ -42,6 +42,7 @@ export async function postElectoralArea(req: Request, res: Response, next: NextF
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
     }
+
     body.nameLowerCase = body.name.toLowerCase(); // add nameLowerCase for easy consistent searching
     // ensure that the parentLevelName exists in electoralLevels
     if (body.parentLevelName) { // adding other electoral area apart from the country
@@ -59,6 +60,7 @@ export async function postElectoralArea(req: Request, res: Response, next: NextF
             return Promise.reject({errMsg: i18next.t('entity_already_exists')});
         }
     }
+    
     // save electoral area
     let electoralArea = new electoralAreaModel(body);
     await electoralArea.save(); // .create
