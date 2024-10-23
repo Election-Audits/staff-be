@@ -232,3 +232,33 @@ export async function getOneParty(req: Request, res: Response, next: NextFunctio
     let party = await partyModel.findById(req.params.id);
     return party;
 }
+
+
+/**
+ * update a political party
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function updateParty(req: Request, res: Response, next: NextFunction) {
+    // check param input
+    let { error } = await objectIdSchema.validate(req.params);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+    // check body input
+    let { error: bodyError } = await postPartySchema.validate(req.body);
+    if (bodyError) {
+        debug('schema error: ', bodyError);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+    // TODO: check approaching elections and disallow changes too close to an election?
+    // update party
+    let filter = {_id: req.params.id};
+    await partyModel.updateOne(filter, {$set: req.body});
+}
+
+

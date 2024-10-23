@@ -60,6 +60,7 @@ export const electoralAreaSchema = Joi.object({
     name: Joi.string().max(100),
     level: Joi.string().max(50),
     parentLevelName: Joi.string().max(100),
+    parentLevelId: Joi.string().max(30),
     location: {
         lon: Joi.number(),
         lat: Joi.number()

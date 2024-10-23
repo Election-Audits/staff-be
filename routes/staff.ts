@@ -13,7 +13,7 @@ import { secrets , checkSecretsReturned } from "../utils/infisical";
 import { BUILD_TYPES } from "shared-lib/constants";
 import { staffSession } from "../utils/session";
 import { getElectoralLevels, postElectoralArea, postElectoralAreaBulk, getElectoralArea, getElections, getOneElection,
-postParty, getParties, getOneParty } from "../controllers/staff";
+postParty, getParties, getOneParty, updateParty } from "../controllers/staff";
 import multer from "multer";
 
 
@@ -177,3 +177,19 @@ passport.authenticate('staff-cookie', {session: false}),
     })
     .catch((err)=> endpointError(err, req, res));
 });
+
+
+/*
+Update a political party
+*/
+router.put('/party/:id',
+passport.authenticate('staff-cookie', {session: false}),
+(req,res,next)=>{
+    debug('received request to update a political party...');
+    updateParty(req,res,next)
+    .then(()=>{
+        return res.status(200).end();
+    })
+    .catch((err)=> endpointError(err,req,res));
+});
+
