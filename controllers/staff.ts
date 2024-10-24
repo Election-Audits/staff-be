@@ -1,12 +1,12 @@
 const debug = require('debug')('ea:ctrl-staff');
 debug.log = console.log.bind(console);
 import i18next from "i18next";
-import { electoralLevelsModel, partyModel } from "../db/models/others";
+import { electoralLevelsModel, partyModel, candidateModel } from "../db/models/others";
 import { electoralAreaModel } from "../db/models/electoral-area";
 import { electionModel } from "../db/models/election";
 import { Request, Response, NextFunction } from "express";
 import { electoralAreaSchema, getElectoralAreaSchema, getElectionsSchema, getOneElectionSchema, postPartySchema,
-objectIdSchema } from "../utils/joi";
+objectIdSchema, postCandidateSchema } from "../utils/joi";
 import { saveExcelDoc, getDataFromExcel, validateExcel, iterateDataRows } from "./files";
 import { filesDir, pageLimit, getQueryNumberWithDefault } from "../utils/misc";
 import * as path from "path";
@@ -261,6 +261,27 @@ export async function updateParty(req: Request, res: Response, next: NextFunctio
     // update party
     let filter = {_id: req.params.id};
     await partyModel.updateOne(filter, {$set: req.body});
+}
+
+
+/**
+ * Add a candidate to an election
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function postCandidate(req: Request, res: Response, next: NextFunction) {
+    // check input with Joi
+    let { error } = await postCandidateSchema.validateAsync(req.body);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+    // TODO: save candidate picture
+
+    // write candidate db. TODO: delete 'photo' field from req.body?
+    await candidateModel.create(req.body);
 }
 
 

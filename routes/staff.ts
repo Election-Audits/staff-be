@@ -13,7 +13,7 @@ import { secrets , checkSecretsReturned } from "../utils/infisical";
 import { BUILD_TYPES } from "shared-lib/constants";
 import { staffSession } from "../utils/session";
 import { getElectoralLevels, postElectoralArea, postElectoralAreaBulk, getElectoralArea, getElections, getOneElection,
-postParty, getParties, getOneParty, updateParty } from "../controllers/staff";
+postParty, getParties, getOneParty, updateParty, postCandidate } from "../controllers/staff";
 import multer from "multer";
 
 
@@ -187,6 +187,22 @@ passport.authenticate('staff-cookie', {session: false}),
 (req,res,next)=>{
     debug('received request to update a political party...');
     updateParty(req,res,next)
+    .then(()=>{
+        return res.status(200).end();
+    })
+    .catch((err)=> endpointError(err,req,res));
+});
+
+
+/*
+Add a candidate to an election
+*/
+router.post('/candidate',
+passport.authenticate('staff-cookie', {session: false}),
+multer().none(), // TODO: get file 'photo'
+(req,res,next)=>{
+    debug('received request to POST /candidate...');
+    postCandidate(req,res,next)
     .then(()=>{
         return res.status(200).end();
     })

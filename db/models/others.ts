@@ -16,6 +16,7 @@ async function setup() {
         // create models
         electoralLevelsModel = databaseConns[db].model("ElectoralLevels", electoralLevelsSchema, "ElectoralLevels");
         partyModel = databaseConns[db].model("Party", partySchema, "Parties");
+        candidateModel = databaseConns[db].model("Candidate", candidateSchema, "Candidates");
     }
 }
 
@@ -59,3 +60,28 @@ partySchema.index({initials: 1}, {unique: true});
 
 // init model. Will be updated upon db connections in 'setup'
 export let partyModel = mongoose.model("Party", partySchema, "Parties");
+// --------------------
+
+
+// -------------------- Candidate Schema
+const candidateSchema = new Schema({
+    electionId: SchemaTypes.String,
+    partyId: SchemaTypes.String,
+    surname: SchemaTypes.String,
+    otherNames: SchemaTypes.String,
+    title: SchemaTypes.String
+});
+
+candidateSchema.index({party: 1}, 
+    {
+        unique: true, sparse: true, 
+        partialFilterExpression: { partyId: {type: 'string'} }
+    }
+);
+
+
+// init model. Will be updated upon db connections in 'setup'
+export let candidateModel = mongoose.model("Candidate", candidateSchema, "Candidates");
+
+// --------------------
+
