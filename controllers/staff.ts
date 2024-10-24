@@ -10,6 +10,7 @@ objectIdSchema, postCandidateSchema } from "../utils/joi";
 import { saveExcelDoc, getDataFromExcel, validateExcel, iterateDataRows } from "./files";
 import { filesDir, pageLimit, getQueryNumberWithDefault } from "../utils/misc";
 import * as path from "path";
+import { pollAgentModel } from "../db/models/poll-agent";
 
 
 
@@ -313,3 +314,24 @@ export async function updateCandidate(req: Request, res: Response, next: NextFun
     let filter = {_id: req.params.id};
     await candidateModel.updateOne(filter, {$set: req.body});
 }
+
+
+/**
+ * get a poll station agent
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function getAgent(req: Request, res: Response, next: NextFunction) {
+    // Joi input check for id param
+    let { error } = await objectIdSchema.validateAsync(req.params);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+    let agent = await pollAgentModel.findById(req.params.id);
+    return agent;
+}
+
+

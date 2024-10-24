@@ -13,7 +13,7 @@ import { secrets , checkSecretsReturned } from "../utils/infisical";
 import { BUILD_TYPES } from "shared-lib/constants";
 import { staffSession } from "../utils/session";
 import { getElectoralLevels, postElectoralArea, postElectoralAreaBulk, getElectoralArea, getElections, getOneElection,
-postParty, getParties, getOneParty, updateParty, postCandidate, updateCandidate } from "../controllers/staff";
+postParty, getParties, getOneParty, updateParty, postCandidate, updateCandidate, getAgent } from "../controllers/staff";
 import multer from "multer";
 
 
@@ -219,6 +219,24 @@ passport.authenticate('staff-cookie', {session: false}),
     updateCandidate(req,res,next)
     .then(()=>{
         return res.status(200).end();
+    })
+    .catch((err)=> endpointError(err,req,res));
+});
+
+
+// TODO: PUT /candidate/:id/picture
+
+
+/*
+GET a polling agent
+*/
+router.get('/agent/:id',
+passport.authenticate('staff-cookie', {session: false}),
+(req,res,next)=>{
+    debug('received request to get /agent/:id');
+    getAgent(req,res,next)
+    .then((data)=>{
+        return res.status(200).send(data);
     })
     .catch((err)=> endpointError(err,req,res));
 });
