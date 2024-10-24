@@ -149,3 +149,12 @@ export const putPollAgentSchema = Joi.object({
 })
 .nand('partyId', 'candidateId'); // cannot update both partyId and candidateId
 
+
+// get candidates schema
+export const getCandidatesSchema = Joi.object({
+    electionId: Joi.string().alphanum().max(30),
+    filter: Joi.string().alphanum().max(20).allow("")
+});
+
+
+

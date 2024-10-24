@@ -6,7 +6,7 @@ import { electoralAreaModel } from "../db/models/electoral-area";
 import { electionModel } from "../db/models/election";
 import { Request, Response, NextFunction } from "express";
 import { electoralAreaSchema, getElectoralAreaSchema, getElectionsSchema, getOneElectionSchema, postPartySchema,
-objectIdSchema, postCandidateSchema } from "../utils/joi";
+objectIdSchema, postCandidateSchema, getCandidatesSchema } from "../utils/joi";
 import { saveExcelDoc, getDataFromExcel, validateExcel, iterateDataRows } from "./files";
 import { filesDir, pageLimit, getQueryNumberWithDefault } from "../utils/misc";
 import * as path from "path";
@@ -332,6 +332,29 @@ export async function getAgent(req: Request, res: Response, next: NextFunction) 
 
     let agent = await pollAgentModel.findById(req.params.id);
     return agent;
+}
+
+
+/**
+ * Get candidates of an election
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function getCandidates(req: Request, res: Response, next: NextFunction) {
+    // Joi input check for query
+    let { error } = await getCandidatesSchema.validateAsync(req.query);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+    // get candidates. use electionId and filter query params
+    let { electionId, filter } = req.query;
+    let filterDb: {[key: string]: any} = { electionId };
+    if (filter == 'ind') filterDb.partyId = "";
+    let candidates = await candidateModel.find(filterDb);
+    return candidates;
 }
 
 
