@@ -118,7 +118,7 @@ export const objectIdSchema = Joi.object({
 // postCandidate schema
 export const postCandidateSchema = Joi.object({
     electionId: Joi.string().alphanum().max(30),
-    partyId: Joi.string().alphanum().max(30),
+    partyId: Joi.string().alphanum().max(30).allow(""),
     surname: Joi.string().max(50),
     otherNames: Joi.string().max(100),
     // title: Joi.string().max(30), // todo

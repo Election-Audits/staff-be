@@ -278,10 +278,38 @@ export async function postCandidate(req: Request, res: Response, next: NextFunct
         return Promise.reject({errMsg: i18next.t("request_body_error")});
     }
 
-    // TODO: save candidate picture
-
-    // write candidate db. TODO: delete 'photo' field from req.body?
-    await candidateModel.create(req.body);
+    // write candidate db.
+    let createRet = await candidateModel.create(req.body);
+    // debug('createRet: ', createRet);
+    return {
+        id: createRet._id
+    };
 }
 
 
+/**
+ * Update a candidate of an election
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function updateCandidate(req: Request, res: Response, next: NextFunction) {
+    // check param input with Joi. 
+    let { error } = await objectIdSchema.validateAsync(req.params);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+    // now check body input
+    let { error: bodyError } = await postCandidateSchema.validateAsync(req.body);
+    if (bodyError) {
+        debug('schema error: ', bodyError);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+
+    // update record
+    let filter = {_id: req.params.id};
+    await candidateModel.updateOne(filter, {$set: req.body});
+}

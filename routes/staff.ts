@@ -13,7 +13,7 @@ import { secrets , checkSecretsReturned } from "../utils/infisical";
 import { BUILD_TYPES } from "shared-lib/constants";
 import { staffSession } from "../utils/session";
 import { getElectoralLevels, postElectoralArea, postElectoralAreaBulk, getElectoralArea, getElections, getOneElection,
-postParty, getParties, getOneParty, updateParty, postCandidate } from "../controllers/staff";
+postParty, getParties, getOneParty, updateParty, postCandidate, updateCandidate } from "../controllers/staff";
 import multer from "multer";
 
 
@@ -199,13 +199,28 @@ Add a candidate to an election
 */
 router.post('/candidate',
 passport.authenticate('staff-cookie', {session: false}),
-multer().none(), // TODO: get file 'photo'
 (req,res,next)=>{
     debug('received request to POST /candidate...');
     postCandidate(req,res,next)
+    .then((data)=>{
+        return res.status(200).send(data);
+    })
+    .catch((err)=> endpointError(err,req,res));
+});
+
+
+/*
+Update a candidate of an election
+*/
+router.put('/candidate/:id',
+passport.authenticate('staff-cookie', {session: false}),
+(req,res,next)=>{
+    debug('received request to update /candidate/:id...');
+    updateCandidate(req,res,next)
     .then(()=>{
         return res.status(200).end();
     })
     .catch((err)=> endpointError(err,req,res));
 });
+
 

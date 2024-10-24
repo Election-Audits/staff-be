@@ -72,12 +72,15 @@ const candidateSchema = new Schema({
     title: SchemaTypes.String
 });
 
-candidateSchema.index({party: 1}, 
-    {
-        unique: true, sparse: true, 
-        partialFilterExpression: { partyId: {type: 'string'} }
+// create a unique index for party
+candidateSchema.index({electionId: 1, party: 1},
+    { // TODO: investigate index not being set
+        unique: true, //sparse: true, 
+        //partialFilterExpression: { partyId: {$type: 'string'} } // , $ne: ''
     }
 );
+
+candidateSchema.index({electionId: 1, surname: 1, otherNames: 1}, {unique: true});
 
 
 // init model. Will be updated upon db connections in 'setup'
