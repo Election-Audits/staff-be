@@ -6,7 +6,8 @@ import { staffModel } from "../db/models/staff";
 import { electoralLevelsModel } from "../db/models/others";
 import { electionModel } from "../db/models/election";
 import { electoralAreaModel } from "../db/models/electoral-area";
-import { getStaffByIdSchema, electoralLevelsSchema, postElectionSchema } from "../utils/joi";
+import { pollAgentModel } from "../db/models/poll-agent";
+import { getStaffByIdSchema, electoralLevelsSchema, postElectionSchema, postPollAgentSchema } from "../utils/joi";
 import { getJoiError } from "shared-lib/backend/misc";
 import * as mongoose from "mongoose";
 
@@ -222,3 +223,26 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
     // save to database
     await electionModel.collection.insertMany(electionArray);
 }
+
+
+/**
+ * Add a supervisor polling agent (preapproval)
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function postAgent(req: Request, res: Response, next: NextFunction) {
+    // Joi input check
+    let body = req.body;
+    let { error } = await postPollAgentSchema.validateAsync(body);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+    // TODO: ensure existence of party with partyId, or candidate with candidateId
+
+    // create record for pre-approving poll agent
+    await pollAgentModel.create(body);
+}
+

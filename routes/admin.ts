@@ -11,7 +11,8 @@ import { COOKIE_SECRET as cookieSecretEnv, BUILD } from "../utils/env";
 import cookieParser from "cookie-parser";
 import { secrets , checkSecretsReturned } from "../utils/infisical";
 import { BUILD_TYPES } from "shared-lib/constants";
-import { getStaffWithoutRoles, getStaffById, createElectoralLevels, postElection } from "../controllers/admin";
+import { getStaffWithoutRoles, getStaffById, createElectoralLevels, postElection, postAgent } 
+from "../controllers/admin";
 import { staffSession } from "../utils/session";
 
 
@@ -103,4 +104,24 @@ passport.authenticate('data-master-cookie', {session: false}),
     .then(()=> res.status(200).end())
     .catch((err)=> endpointError(err, req, res));
 });
+
+
+/*
+Add a polling agent (pre-approval) at the highest electoral levels: ('country' or 'region')
+TODO: how to add supervisor agents for independent candidates: either create a dummy party for ind. cand. and
+set this partyId when adding agent, or accept candidateId as an input, then add function to get independent
+candidates to add to options when creating polling agents
+Prefer option 2
+*/
+router.post('/agent',
+passport.authenticate('data-master-cookie', {session: false}),
+(req,res,next)=>{
+    debug('received request to POST /agent...');
+    postAgent(req,res,next)
+    .then(()=>{
+        return res.status(200).end();
+    })
+    .catch((err)=> endpointError(err,req,res));
+});
+
 

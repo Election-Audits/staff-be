@@ -4,7 +4,7 @@ const debug = require('debug')('ea:joi');
 debug.log = console.log.bind(console);
 import * as Joi from "joi";
 
-
+// TODO: validate vs validateAsync
 
 // reused validation fields
 const email = Joi.string().email().min(3).max(30);
@@ -124,4 +124,33 @@ export const postCandidateSchema = Joi.object({
     // title: Joi.string().max(30), // todo
     photo: Joi.any()
 });
+
+
+// pollAgent schema
+export const postPollAgentSchema = Joi.object({
+    partyId: Joi.string().alphanum().max(30), // TODO: this implies having to create a dummy party for independent presidential candidates
+    candidateId: Joi.string().alphanum().max(30),
+    email: Joi.string().email().required(),
+    surname: Joi.string().max(50),
+    otherNames: Joi.string().max(100),
+    electoralLevel: Joi.string().max(50)
+})
+.xor('partyId', 'candidateId'); // partyId or candidateId must be set but not both
+
+// post pollAgent schema
+// export const postPollAgentSchema = Joi.object({
+//     agents: Joi.array().items(
+//         Joi.object({
+//             partyId: Joi.string().alphanum().max(30), // TODO: this implies having to create a dummy party for independent presidential candidates
+//             candidateId: Joi.string().alphanum().max(30),
+//             email: Joi.string().email().required(),
+//             surname: Joi.string().max(50),
+//             otherNames: Joi.string().max(100),
+//             electoralLevel: Joi.string().max(50)
+//         })
+//         .xor('partyId', 'candidateId') // partyId or candidateId must be set but not both
+//     )
+// });
+
+
 
