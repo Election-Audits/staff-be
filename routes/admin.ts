@@ -11,7 +11,7 @@ import { COOKIE_SECRET as cookieSecretEnv, BUILD } from "../utils/env";
 import cookieParser from "cookie-parser";
 import { secrets , checkSecretsReturned } from "../utils/infisical";
 import { BUILD_TYPES } from "shared-lib/constants";
-import { getStaffWithoutRoles, getStaffById, createElectoralLevels, postElection, postAgent } 
+import { getStaffWithoutRoles, getStaffById, createElectoralLevels, postElection, postAgent, putAgent } 
 from "../controllers/admin";
 import { staffSession } from "../utils/session";
 
@@ -124,4 +124,18 @@ passport.authenticate('data-master-cookie', {session: false}),
     .catch((err)=> endpointError(err,req,res));
 });
 
+
+/*
+Update an agent
+*/
+router.put('/agent/:id',
+passport.authenticate('data-master-cookie', {session: false}),
+(req,res,next)=>{
+    debug('received request to PUT /agent/:id...');
+    putAgent(req,res,next)
+    .then(()=>{
+        return res.status(200).end();
+    })
+    .catch((err)=> endpointError(err,req,res));
+});
 

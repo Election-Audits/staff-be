@@ -7,7 +7,8 @@ import { electoralLevelsModel } from "../db/models/others";
 import { electionModel } from "../db/models/election";
 import { electoralAreaModel } from "../db/models/electoral-area";
 import { pollAgentModel } from "../db/models/poll-agent";
-import { getStaffByIdSchema, electoralLevelsSchema, postElectionSchema, postPollAgentSchema } from "../utils/joi";
+import { getStaffByIdSchema, electoralLevelsSchema, postElectionSchema, postPollAgentSchema, objectIdSchema, 
+putPollAgentSchema } from "../utils/joi";
 import { getJoiError } from "shared-lib/backend/misc";
 import * as mongoose from "mongoose";
 
@@ -246,3 +247,43 @@ export async function postAgent(req: Request, res: Response, next: NextFunction)
     await pollAgentModel.create(body);
 }
 
+
+/**
+ * Update a polling station agent
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function putAgent(req: Request, res: Response, next: NextFunction) {
+    // input check of param
+    let { error } = await objectIdSchema.validateAsync(req.params);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+    let agentId = req.params.id;
+
+    // input check of body
+    let body = req.body;
+    let { error: bodyError } = await putPollAgentSchema.validateAsync(body);
+    if (bodyError) {
+        debug('schema error: ', bodyError);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+    // // cannot contain both partyId and candidateId. Handled by Joi
+    // if (body.partyId && body.candidateId) {
+    //     debug('cannot update both partyId and candidateId');
+    //     return Promise.reject({errMsg: i18next.t("request_body_error")});
+    // }
+
+    // Ensure not trying to update an agent who has completed sign up (emailConfirmed / phoneConfirmed not set)
+    let pollAgent = await pollAgentModel.findById(agentId);
+    if (pollAgent?.emailConfirmed || pollAgent?.phoneConfirmed) {
+        return Promise.reject({errMsg: i18next.t('not_update_agent')});
+    }
+
+    // update body
+    let filter = {_id: agentId};
+    await pollAgentModel.updateOne(filter, {$set: body});
+}
