@@ -1,13 +1,13 @@
 {
-  "name": "backend-staff",
+  "name": "staff-be",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "Roland Krieger (Etornam)",
   "license": "GPL-3.0-only",
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

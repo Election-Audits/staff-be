@@ -8,7 +8,9 @@ import { DBS } from "../../utils/env"
 import paginate from "mongoose-paginate-v2";
 
 
-
+/*
+check db connection, then create model using db connection
+*/
 async function setup() {
     await checkDatabaseConnected();
     let dbs = DBS?.split(",") || [];
@@ -19,7 +21,7 @@ async function setup() {
     }
     // now setup eaudit database for staff app
     staffModel = databaseConns.eaudit.model<StaffDocument, mongoose.PaginateModel<StaffDocument> >
-    ("Staff", staffSchema, "Staff")
+    ("Staff", staffSchema, "Staff");
 }
 setup();
 
@@ -52,7 +54,7 @@ const staffSchema = new Schema({
         all: SchemaTypes.Boolean // all countries/entities. 
         // scope can also include: [country]: true
         }, 
-        { strict: false }
+        { strict: false } // allow creation and access of new fields for [country]
     ),
 });
 

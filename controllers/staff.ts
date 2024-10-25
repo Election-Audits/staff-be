@@ -1,14 +1,16 @@
 const debug = require('debug')('ea:ctrl-staff');
 debug.log = console.log.bind(console);
 import i18next from "i18next";
-import { electoralLevelsModel } from "../db/models/others";
+import { electoralLevelsModel, partyModel, candidateModel } from "../db/models/others";
 import { electoralAreaModel } from "../db/models/electoral-area";
 import { electionModel } from "../db/models/election";
 import { Request, Response, NextFunction } from "express";
-import { electoralAreaSchema, getElectoralAreaSchema, getElectionsSchema, getOneElectionSchema } from "../utils/joi";
+import { electoralAreaSchema, getElectoralAreaSchema, getElectionsSchema, getOneElectionSchema, postPartySchema,
+objectIdSchema, postCandidateSchema, getCandidatesSchema } from "../utils/joi";
 import { saveExcelDoc, getDataFromExcel, validateExcel, iterateDataRows } from "./files";
 import { filesDir, pageLimit, getQueryNumberWithDefault } from "../utils/misc";
 import * as path from "path";
+import { pollAgentModel } from "../db/models/poll-agent";
 
 
 
@@ -41,6 +43,7 @@ export async function postElectoralArea(req: Request, res: Response, next: NextF
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
     }
+
     body.nameLowerCase = body.name.toLowerCase(); // add nameLowerCase for easy consistent searching
     // ensure that the parentLevelName exists in electoralLevels
     if (body.parentLevelName) { // adding other electoral area apart from the country
@@ -58,6 +61,7 @@ export async function postElectoralArea(req: Request, res: Response, next: NextF
             return Promise.reject({errMsg: i18next.t('entity_already_exists')});
         }
     }
+    
     // save electoral area
     let electoralArea = new electoralAreaModel(body);
     await electoralArea.save(); // .create
@@ -182,4 +186,175 @@ export async function getOneElection(req: Request, res: Response, next: NextFunc
     let election = await electionModel.findById(electionId);
     return election;
 }
+
+
+/**
+ * Add a political party. TODO: save party logo in db or S3
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function postParty(req: Request, res: Response, next: NextFunction) {
+    // check input
+    let { error } = await postPartySchema.validate(req.body);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+    //
+    await partyModel.create(req.body);
+}
+
+
+/**
+ * Get all political parties
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function getParties(req: Request, res: Response, next: NextFunction) {
+    let parties = await partyModel.find();
+    return parties;
+}
+
+
+/**
+ * GET a specific political party
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function getOneParty(req: Request, res: Response, next: NextFunction) {
+    // check input
+    let { error } = await objectIdSchema.validate(req.params);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+    //
+    let party = await partyModel.findById(req.params.id);
+    return party;
+}
+
+
+/**
+ * update a political party
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function updateParty(req: Request, res: Response, next: NextFunction) {
+    // check param input
+    let { error } = await objectIdSchema.validate(req.params);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+    // check body input
+    let { error: bodyError } = await postPartySchema.validate(req.body);
+    if (bodyError) {
+        debug('schema error: ', bodyError);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+    // TODO: check approaching elections and disallow changes too close to an election?
+    // update party
+    let filter = {_id: req.params.id};
+    await partyModel.updateOne(filter, {$set: req.body});
+}
+
+
+/**
+ * Add a candidate to an election
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function postCandidate(req: Request, res: Response, next: NextFunction) {
+    // check input with Joi
+    let { error } = await postCandidateSchema.validateAsync(req.body);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+    // write candidate db.
+    let createRet = await candidateModel.create(req.body);
+    // debug('createRet: ', createRet);
+    return {
+        id: createRet._id
+    };
+}
+
+
+/**
+ * Update a candidate of an election
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function updateCandidate(req: Request, res: Response, next: NextFunction) {
+    // check param input with Joi. 
+    let { error } = await objectIdSchema.validateAsync(req.params);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+    // now check body input
+    let { error: bodyError } = await postCandidateSchema.validateAsync(req.body);
+    if (bodyError) {
+        debug('schema error: ', bodyError);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+
+    // update record
+    let filter = {_id: req.params.id};
+    await candidateModel.updateOne(filter, {$set: req.body});
+}
+
+
+/**
+ * get a poll station agent
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function getAgent(req: Request, res: Response, next: NextFunction) {
+    // Joi input check for id param
+    let { error } = await objectIdSchema.validateAsync(req.params);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+    let agent = await pollAgentModel.findById(req.params.id);
+    return agent;
+}
+
+
+/**
+ * Get candidates of an election
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function getCandidates(req: Request, res: Response, next: NextFunction) {
+    // Joi input check for query
+    let { error } = await getCandidatesSchema.validateAsync(req.query);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+    // get candidates. use electionId and filter query params
+    let { electionId, filter } = req.query;
+    let filterDb: {[key: string]: any} = { electionId };
+    if (filter == 'ind') filterDb.partyId = "";
+    let candidates = await candidateModel.find(filterDb);
+    return candidates;
+}
+
 

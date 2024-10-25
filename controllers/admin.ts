@@ -6,7 +6,9 @@ import { staffModel } from "../db/models/staff";
 import { electoralLevelsModel } from "../db/models/others";
 import { electionModel } from "../db/models/election";
 import { electoralAreaModel } from "../db/models/electoral-area";
-import { getStaffByIdSchema, electoralLevelsSchema, postElectionSchema } from "../utils/joi";
+import { pollAgentModel } from "../db/models/poll-agent";
+import { getStaffByIdSchema, electoralLevelsSchema, postElectionSchema, postPollAgentSchema, objectIdSchema, 
+putPollAgentSchema } from "../utils/joi";
 import { getJoiError } from "shared-lib/backend/misc";
 import * as mongoose from "mongoose";
 
@@ -82,6 +84,7 @@ export async function createElectoralLevels(req: Request, res: Response, next: N
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
     }
+
     let levelsIn : string[] = req.body.levels;
     // convert input electoral levels to lower case
     levelsIn = levelsIn.map((lvl)=> lvl.toLowerCase());
@@ -98,6 +101,7 @@ export async function createElectoralLevels(req: Request, res: Response, next: N
     record?.oldLevels.map((lvl)=>{
         oldLevelsObj_0[lvl.name+''] = lvl;
     });
+
     // iterate through input levels, create new level array. If level exists, use its existing uid.
     let levels = [];
     let uidsInLevels = record?.levels.map((lvl)=> lvl.uid || 0) || []; // todo: use asserts for uid
@@ -113,6 +117,7 @@ export async function createElectoralLevels(req: Request, res: Response, next: N
             maxUid++;
         }
     }
+
     // Now iterate through database levels, if a level in db not in input, move it to oldLevels
     let levels_0 = record?.levels || [];
     let oldLevels = record?.oldLevels || new mongoose.Types.DocumentArray<any>([]);
@@ -149,6 +154,7 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
     }
+
     // check if there's already an upcoming election of this type, for this electoralAreaId
     let { type, electoralAreaId } = body;
     let dateNow = new Date().toISOString();
@@ -158,9 +164,10 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
     if (existElections.length > 0) {
         return Promise.reject({errMsg: i18next.t('entity_already_exists')});
     }
+
     // add single election if multi field not set, else add bulk
     let electionDate = new Date(body.date).toISOString();
-    if (!body.multi?.includeAllValues) {
+    if (!body.multi?.includeAllValues) { // add single election
         debug('will add single election');
         body.multi = undefined; // not saving multi to db
         body.date = electionDate; //
@@ -170,6 +177,7 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
         await electionModel.create(body);
         return;
     }
+
     // Adding multiple elections, e.g creating parliamentary elections for all constituencies in a country
     debug('multi field set. Will add mulitple elections');
     // include all values of electoralLevel in multi.electoralLevelValue
@@ -184,6 +192,7 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
     if (startLevelInd == -1 || endLevelInd == -1) {
         return Promise.reject({errMsg: i18next.t('request_body_error')});
     }
+
     // step through the electoral levels
     let curElectoralValues = [ multi.electoralLevelValue.toLowerCase() ];
     let electoralAreas: {[key: string]: any}[] = [];
@@ -198,6 +207,7 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
         curElectoralValues = electoralAreas.map((el)=> el.nameLowerCase);
         // debug(`number(curElectoralValues): `, curElectoralValues.length);
     }
+    
     // electoralAreas is array of electoral areas for which elections should be created
     // debug('electoralAreas: ', electoralAreas);
     debug(`number of elections to create: ${electoralAreas.length}`);
@@ -213,4 +223,67 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
     });
     // save to database
     await electionModel.collection.insertMany(electionArray);
+}
+
+
+/**
+ * Add a supervisor polling agent (preapproval)
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function postAgent(req: Request, res: Response, next: NextFunction) {
+    // Joi input check
+    let body = req.body;
+    let { error } = await postPollAgentSchema.validateAsync(body);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+    // TODO: ensure existence of party with partyId, or candidate with candidateId
+
+    // create record for pre-approving poll agent
+    await pollAgentModel.create(body);
+}
+
+
+/**
+ * Update a polling station agent
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function putAgent(req: Request, res: Response, next: NextFunction) {
+    // input check of param
+    let { error } = await objectIdSchema.validateAsync(req.params);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+    let agentId = req.params.id;
+
+    // input check of body
+    let body = req.body;
+    let { error: bodyError } = await putPollAgentSchema.validateAsync(body);
+    if (bodyError) {
+        debug('schema error: ', bodyError);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+    // // cannot contain both partyId and candidateId. Handled by Joi
+    // if (body.partyId && body.candidateId) {
+    //     debug('cannot update both partyId and candidateId');
+    //     return Promise.reject({errMsg: i18next.t("request_body_error")});
+    // }
+
+    // Ensure not trying to update an agent who has completed sign up (emailConfirmed / phoneConfirmed not set)
+    let pollAgent = await pollAgentModel.findById(agentId);
+    if (pollAgent?.emailConfirmed || pollAgent?.phoneConfirmed) {
+        return Promise.reject({errMsg: i18next.t('not_update_agent')});
+    }
+
+    // update body
+    let filter = {_id: agentId};
+    await pollAgentModel.updateOne(filter, {$set: body});
 }

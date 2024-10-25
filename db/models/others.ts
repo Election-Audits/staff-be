@@ -15,6 +15,8 @@ async function setup() {
         if (db == 'eaudit') continue;
         // create models
         electoralLevelsModel = databaseConns[db].model("ElectoralLevels", electoralLevelsSchema, "ElectoralLevels");
+        partyModel = databaseConns[db].model("Party", partySchema, "Parties");
+        candidateModel = databaseConns[db].model("Candidate", candidateSchema, "Candidates");
     }
 }
 
@@ -47,3 +49,42 @@ const electoralLevelsSchema = new Schema({
 // init model. Will be updated upon db connections in 'setup'
 export let electoralLevelsModel = mongoose.model("ElectoralLevels", electoralLevelsSchema, "ElectoralLevels");
 // --------------------
+
+// -------------------- Party Schema
+const partySchema = new Schema({
+    name: SchemaTypes.String,
+    initials: SchemaTypes.String
+});
+
+partySchema.index({initials: 1}, {unique: true});
+
+// init model. Will be updated upon db connections in 'setup'
+export let partyModel = mongoose.model("Party", partySchema, "Parties");
+// --------------------
+
+
+// -------------------- Candidate Schema
+const candidateSchema = new Schema({
+    electionId: SchemaTypes.String,
+    partyId: SchemaTypes.String,
+    surname: SchemaTypes.String,
+    otherNames: SchemaTypes.String,
+    title: SchemaTypes.String
+});
+
+// create a unique index for party
+candidateSchema.index({electionId: 1, party: 1},
+    { // TODO: investigate index not being set
+        unique: true, //sparse: true, 
+        //partialFilterExpression: { partyId: {$type: 'string'} } // , $ne: ''
+    }
+);
+
+candidateSchema.index({electionId: 1, surname: 1, otherNames: 1}, {unique: true});
+
+
+// init model. Will be updated upon db connections in 'setup'
+export let candidateModel = mongoose.model("Candidate", candidateSchema, "Candidates");
+
+// --------------------
+

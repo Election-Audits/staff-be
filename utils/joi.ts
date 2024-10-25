@@ -4,7 +4,7 @@ const debug = require('debug')('ea:joi');
 debug.log = console.log.bind(console);
 import * as Joi from "joi";
 
-
+// TODO: validate vs validateAsync
 
 // reused validation fields
 const email = Joi.string().email().min(3).max(30);
@@ -60,6 +60,7 @@ export const electoralAreaSchema = Joi.object({
     name: Joi.string().max(100),
     level: Joi.string().max(50),
     parentLevelName: Joi.string().max(100),
+    parentLevelId: Joi.string().max(30),
     location: {
         lon: Joi.number(),
         lat: Joi.number()
@@ -99,3 +100,61 @@ export const getElectionsSchema = Joi.object({
 export const getOneElectionSchema = Joi.object({
     id: Joi.string().alphanum().max(30)
 });
+
+
+// Add a political pary
+export const postPartySchema = Joi.object({
+    name: Joi.string().max(100),
+    initials: Joi.string().max(20)
+});
+
+
+// objectId schema
+export const objectIdSchema = Joi.object({
+    id: Joi.string().alphanum().max(30)
+});
+
+
+// postCandidate schema
+export const postCandidateSchema = Joi.object({
+    electionId: Joi.string().alphanum().max(30),
+    partyId: Joi.string().alphanum().max(30).allow(""),
+    surname: Joi.string().max(50),
+    otherNames: Joi.string().max(100),
+    // title: Joi.string().max(30), // todo
+    photo: Joi.any()
+});
+
+
+// pollAgent schema
+export const postPollAgentSchema = Joi.object({
+    partyId: Joi.string().alphanum().max(30),
+    candidateId: Joi.string().alphanum().max(30),
+    email: Joi.string().email().required(),
+    surname: Joi.string().max(50),
+    otherNames: Joi.string().max(100),
+    electoralLevel: Joi.string().max(50)
+})
+.xor('partyId', 'candidateId'); // partyId or candidateId must be set but not both
+
+
+// pollAgent schema for update
+export const putPollAgentSchema = Joi.object({
+    partyId: Joi.string().alphanum().max(30),
+    candidateId: Joi.string().alphanum().max(30),
+    email: Joi.string().email(),
+    surname: Joi.string().max(50),
+    otherNames: Joi.string().max(100),
+    electoralLevel: Joi.string().max(50)
+})
+.nand('partyId', 'candidateId'); // cannot update both partyId and candidateId
+
+
+// get candidates schema
+export const getCandidatesSchema = Joi.object({
+    electionId: Joi.string().alphanum().max(30),
+    filter: Joi.string().alphanum().max(20).allow("")
+});
+
+
+

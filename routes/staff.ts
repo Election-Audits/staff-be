@@ -12,8 +12,10 @@ import cookieParser from "cookie-parser";
 import { secrets , checkSecretsReturned } from "../utils/infisical";
 import { BUILD_TYPES } from "shared-lib/constants";
 import { staffSession } from "../utils/session";
-import { getElectoralLevels, postElectoralArea, postElectoralAreaBulk, getElectoralArea, getElections, getOneElection } 
+import { getElectoralLevels, postElectoralArea, postElectoralAreaBulk, getElectoralArea, getElections, getOneElection,
+postParty, getParties, getOneParty, updateParty, postCandidate, updateCandidate, getAgent, getCandidates } 
 from "../controllers/staff";
+import multer from "multer";
 
 
 const router = express.Router({ mergeParams: true });
@@ -132,4 +134,128 @@ passport.authenticate('staff-cookie', {session: false}),
     })
     .catch((err)=> endpointError(err, req, res));
 });
+
+
+/*
+Add a political party
+*/
+router.post('/party',
+passport.authenticate('staff-cookie', {session: false}),
+multer().none(),
+(req,res,next)=>{
+    debug('received request to POST /party...');
+    postParty(req,res,next)
+    .then(()=> res.status(200).end())
+    .catch((err)=> endpointError(err,req,res));
+});
+
+
+/*
+GET all political parties
+*/
+router.get('/parties',
+passport.authenticate('staff-cookie', {session: false}),
+(req,res,next)=>{
+    debug('received request to GET /parties...');
+    getParties(req,res,next)
+    .then((data)=>{
+        return res.status(200).send(data);
+    })
+    .catch((err)=> endpointError(err,req,res));
+});
+
+
+/*
+GET a specific political party
+*/
+router.get('/party/:id',
+passport.authenticate('staff-cookie', {session: false}),
+(req,res,next)=>{
+    debug('received request to GET one political party...');
+    getOneParty(req,res,next)
+    .then((data)=>{
+        return res.status(200).send(data);
+    })
+    .catch((err)=> endpointError(err, req, res));
+});
+
+
+/*
+Update a political party
+*/
+router.put('/party/:id',
+passport.authenticate('staff-cookie', {session: false}),
+(req,res,next)=>{
+    debug('received request to update a political party...');
+    updateParty(req,res,next)
+    .then(()=>{
+        return res.status(200).end();
+    })
+    .catch((err)=> endpointError(err,req,res));
+});
+
+
+/*
+Add a candidate to an election
+*/
+router.post('/candidate',
+passport.authenticate('staff-cookie', {session: false}),
+(req,res,next)=>{
+    debug('received request to POST /candidate...');
+    postCandidate(req,res,next)
+    .then((data)=>{
+        return res.status(200).send(data);
+    })
+    .catch((err)=> endpointError(err,req,res));
+});
+
+
+/*
+Update a candidate of an election
+*/
+router.put('/candidate/:id',
+passport.authenticate('staff-cookie', {session: false}),
+(req,res,next)=>{
+    debug('received request to update /candidate/:id...');
+    updateCandidate(req,res,next)
+    .then(()=>{
+        return res.status(200).end();
+    })
+    .catch((err)=> endpointError(err,req,res));
+});
+
+
+// TODO: PUT /candidate/:id/picture
+
+
+/*
+GET a polling agent
+*/
+router.get('/agent/:id',
+passport.authenticate('staff-cookie', {session: false}),
+(req,res,next)=>{
+    debug('received request to get /agent/:id');
+    getAgent(req,res,next)
+    .then((data)=>{
+        return res.status(200).send(data);
+    })
+    .catch((err)=> endpointError(err,req,res));
+});
+
+
+/*
+GET candidates of an election
+*/
+router.get('/candidates', // ?electionId=<>&filter=<>
+passport.authenticate('staff-cookie', {session: false}),
+(req,res,next)=>{
+    debug('received request to GET /candidates?...');
+    getCandidates(req,res,next)
+    .then((data)=>{
+        return res.status(200).send(data);
+    })
+    .catch((err)=> endpointError(err,req,res));
+});
+
+
 
