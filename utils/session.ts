@@ -36,7 +36,8 @@ async function setup() {
     const store = MongoStore.create({
         mongoUrl: eAuditMongoUrl,
         // dbName: auditDbName // NB: dbName set in connection string
-        stringify: false
+        stringify: false,
+        collectionName: 'sessionsStaff'
     });
     // session
     staffSession = session({

@@ -36,8 +36,8 @@ async function setup() {
     await checkSecretsReturned();
     // TODO: get EMAIL_USER and EMAIL_PASSWORD from Infisical
     // get emailUser from environment in local build, Infisical in cloud build
-    emailUser = (BUILD == BUILD_TYPES.local) ? emailUserEnv+'' : ''; // TODO: get from Infisical
-    emailPassword = (BUILD == BUILD_TYPES.local) ? emailPasswordEnv+'' : ''; // TODO
+    emailUser = (BUILD == BUILD_TYPES.local) ? emailUserEnv+'' : secrets.EMAIL_USER;
+    emailPassword = (BUILD == BUILD_TYPES.local) ? emailPasswordEnv+'' : secrets.EMAIL_PASSWORD;
     // create email transporter
     transporter = nodemailer.createTransport({
         host: "mail.privateemail.com", //"smtp.ethereal.email",

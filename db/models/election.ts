@@ -3,7 +3,7 @@
 import * as mongoose from "mongoose";
 const debug = require('debug')('ea:election-model');
 debug.log = console.log.bind(console);
-import { databaseConns, checkDatabaseConnected } from "../mongoose";
+import { databaseConns, checkDatabaseConnected, auditDbName } from "../mongoose";
 import { DBS } from "../../utils/env"
 import paginate from "mongoose-paginate-v2";
 
@@ -17,7 +17,7 @@ async function setup() {
     let dbs = DBS?.split(",") || [];
     // create models for each database (by country/entity)
     for (let db of dbs) {
-        if (db == 'eaudit') continue;
+        if (db == auditDbName) continue;
         // setup electoralAreaModel
         electionModel = databaseConns[db].model
         <ElectionDocument, mongoose.PaginateModel<ElectionDocument> >
