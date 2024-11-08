@@ -5,7 +5,7 @@ import MongoStore from "connect-mongo";
 import { COOKIE_SECRET as cookieSecretEnv, BUILD } from "./env";
 import { BUILD_TYPES } from "shared-lib/constants";
 import { eAuditMongoUrl } from "../db/mongoose";
-import { auditDbName, staffCookieMaxAge } from "./misc";
+import { staffCookieMaxAge } from "./misc";
 import { secrets, checkSecretsReturned } from "./infisical";
 
 
@@ -32,8 +32,7 @@ async function setup() {
     await checkSecretsReturned(); // ensure secrets returned from Infisical
     let cookieSecret = BUILD == BUILD_TYPES.local ? cookieSecretEnv+'' : secrets.COOKIE_SECRET+'';
     // create store with updated eAuditMongoUrl
-    // debug('eauditMongoUrl: ', eAuditMongoUrl);
-    debug(`eAuditMongoUrl: ${eAuditMongoUrl}, cookieSecret: ${cookieSecret}, cookieMaxAge: ${staffCookieMaxAge}`);
+    // debug(`eAuditMongoUrl: ${eAuditMongoUrl}, cookieSecret: ${cookieSecret}, cookieMaxAge: ${staffCookieMaxAge}`);
     const store = MongoStore.create({
         mongoUrl: eAuditMongoUrl,
         // dbName: auditDbName // NB: dbName set in connection string

@@ -22,11 +22,11 @@ async function setup() {
             projectId: INFISICAL_PROJECT_ID || '',
             environment: getInfisicalEnvSlug(NODE_ENV || '')
         }) || [];
-        // debug('list secrets: ', secretsList);
+        /// debug('list secrets: ', secretsList);
         for (let secretEl of secretsList) {
             secrets[secretEl.secretKey] = secretEl.secretValue;
         }
-        debug('secrets: ', secrets);
+        /// debug('secrets: ', secrets);
         secretsReadyBool = true; // indicate that secrets returned
     }
 }

@@ -5,7 +5,6 @@ import { BUILD_TYPES } from "shared-lib/constants";
 import { BUILD, INFISICAL_ID, INFISICAL_SECRET, INFISICAL_PROJECT_ID, NODE_ENV, 
     MONGO_LOCAL_CREDS, DBS } from "../utils/env";
 import { InfisicalClient, LogLevel, SecretElement } from "@infisical/sdk";
-import { auditDbName } from "../utils/misc";
 
 
 // set connection string depending on whether it's a local or cloud build
@@ -14,6 +13,12 @@ const mongoUrlBase = (BUILD == BUILD_TYPES.local) ? '127.0.0.1:27017' : ''; // T
 
 export let eAuditMongoUrl = ''; // general 'eaudit' db assign in setup
 export let databaseConns: {[key: string]: mongoose.Connection}  = {}; // database connections
+
+
+// audit db holds User and session collections. Either eaudit, 'eaudit-test',...
+let dbs = DBS?.split(',') || [];
+export const auditDbName = dbs.find((db)=> db.startsWith('eaudit'));
+debug('auditDbName: ', auditDbName);
 
 
 const infisClient = (BUILD == BUILD_TYPES.cloud) ? new InfisicalClient({
@@ -46,7 +51,7 @@ async function setup () {
     let connectFunctions = [];
     for (let db of dbs) {
         let url = `${protocol}://${mongoCreds}${mongoUrlBase}/${db}`;
-        debug('mongo url: ', url);
+        /// debug('mongo url: ', url);
         connectFunctions.push(mongoose.createConnection(url));
     }
     let connectRets = await Promise.all(connectFunctions);

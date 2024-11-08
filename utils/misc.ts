@@ -7,7 +7,6 @@ import * as path from "path";
 
 
 /* constants */
-export const auditDbName = 'eaudit';
 export const staffCookieMaxAge = 5*24*3600*1000; // max age in milliseconds (5 days)
 export const pageLimit = 20;
 
