@@ -141,7 +141,7 @@ export async function createElectoralLevels(req: Request, res: Response, next: N
 
 
 /**
- * create election(s)
+ * create election(s). TODO: create buckets in S3 storage
  * @param req 
  * @param res 
  * @param next 
@@ -149,7 +149,7 @@ export async function createElectoralLevels(req: Request, res: Response, next: N
 export async function postElection(req: Request, res: Response, next: NextFunction) {
     // check input
     let body = req.body;
-    let { error } = await postElectionSchema.validate(body);
+    let { error } = await postElectionSchema.validateAsync(body);
     if (error) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
@@ -157,23 +157,26 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
 
     // check if there's already an upcoming election of this type, for this electoralAreaId
     let { type, electoralAreaId } = body;
-    let dateNow = new Date().toISOString();
-    let filter = { type, electoralAreaId, date: {$gte: dateNow} };
+    //let dateNow = new Date().toISOString(); //debug('dateNow: ', dateNow);
+    let dateNow = Date.now();
+    let filter = { type, electoralAreaId, unixTimeMs: {$gte: dateNow} }; //debug('filter: ', filter);
     let existElections = await electionModel.find(filter);
-    debug('existElections: ', existElections);
+    //debug('existElections: ', existElections);
     if (existElections.length > 0) {
         return Promise.reject({errMsg: i18next.t('entity_already_exists')});
     }
 
     // add single election if multi field not set, else add bulk
-    let electionDate = new Date(body.date).toISOString();
+    let electionDate = new Date(body.date); //.toISOString();
+    let electionUnixTime = electionDate.getTime(); debug('election unix time: ', electionUnixTime);
     if (!body.multi?.includeAllValues) { // add single election
         debug('will add single election');
         body.multi = undefined; // not saving multi to db
-        body.date = electionDate; //
-        // add name of electoral area
+        body.date = electionDate.toISOString();
+        body.unixTimeMs = electionUnixTime;
+        // add name of electoral area. todo: investigate if needed since only getting name from query
         let electoralArea = await electoralAreaModel.findById(body.electoralAreaId);
-        body.electoralAreaName = electoralArea?.name;
+        body.electoralAreaName = electoralArea?.name; debug('rec to save: ', body);
         await electionModel.create(body);
         return;
     }
@@ -185,7 +188,7 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
     // At each level, pick the value and pick all sub electoral areas under it (i.e with parentLevelName 
     // equal this value)
     let multi = body.multi;
-    let electoralLevelsRec = await electoralLevelsModel.findOne();
+    let electoralLevelsRec = await electoralLevelsModel.findOne(); // TODO: use getElectoralLevels
     let electoralLevels = electoralLevelsRec?.levels || [];
     let startLevelInd = electoralLevels.findIndex((val)=> val.name == multi.electoralLevel );
     let endLevelInd = electoralLevels.findIndex((val)=> val.name == body.electoralLevel);
@@ -214,13 +217,16 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
     let electionArray = electoralAreas.map((electArea)=>{
         let electData = {
             type: body.type,
-            date: electionDate,
+            date: electionDate.toISOString(),
+            unixTimeMs: electionUnixTime,
             electoralLevel: electArea.level,
-            electoralAreaId: electArea._id,
+            electoralAreaId: electArea._id.toString(),
             electoralAreaName: electArea.name
         };
         return electData;
     });
+    debug('electionArray: ', electionArray);
+
     // save to database
     await electionModel.collection.insertMany(electionArray);
 }

@@ -34,13 +34,14 @@ const SchemaTypes = mongoose.SchemaTypes;
 const electionSchema = new Schema({
     type: SchemaTypes.String,
     date: SchemaTypes.Date,
+    unixTimeMs: SchemaTypes.Number,
     electoralLevel: SchemaTypes.String,
     electoralAreaId: SchemaTypes.String,
     electoralAreaName: SchemaTypes.String
 });
 
 // add indexes
-electionSchema.index({type: 1, date: 1});
+electionSchema.index({type: 1, unixTimeMs: 1, electoralAreaId: 1}, {unique: true});
 electionSchema.index({electoralAreaId: 1});
 
 
@@ -48,6 +49,7 @@ electionSchema.index({electoralAreaId: 1});
 interface ElectionData {
     type: string,
     date: string,
+    unixTimeMs: number,
     electoralLevel: string,
     electoralAreaId: string,
     electoralAreaName: string
