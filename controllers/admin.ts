@@ -11,6 +11,8 @@ import { getStaffByIdSchema, electoralLevelsSchema, postElectionSchema, postPoll
 putPollAgentSchema } from "../utils/joi";
 import { getJoiError } from "shared-lib/backend/misc";
 import * as mongoose from "mongoose";
+import { getElectoralLevels, s3client } from "../utils/misc";
+import { CreateBucketCommand } from "@aws-sdk/client-s3";
 
 
 
@@ -141,7 +143,7 @@ export async function createElectoralLevels(req: Request, res: Response, next: N
 
 
 /**
- * create election(s). TODO: create buckets in S3 storage
+ * create election(s)
  * @param req 
  * @param res 
  * @param next 
@@ -166,8 +168,24 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
         return Promise.reject({errMsg: i18next.t('entity_already_exists')});
     }
 
-    // add single election if multi field not set, else add bulk
+    // ensure s3 bucket is created for storing election result documents. bucket name e.g ghana-2024
     let electionDate = new Date(body.date); //.toISOString();
+    let topElectLevel = getElectoralLevels()[0]; // country
+    let electAreaFilter = {level: topElectLevel};
+    let topLevelElectArea = await electoralAreaModel.findOne(electAreaFilter);
+    let bucketName = topLevelElectArea?.nameLowerCase +'-'+ electionDate.getFullYear();
+    debug(`bucketName: ${bucketName}`);
+    // try to create s3 bucket
+    try {
+        let createParams = {Bucket: bucketName};
+        await s3client.send(new CreateBucketCommand(createParams));
+    } catch (exc) {
+        debug('create bucket exc: ', exc);
+        // ignore duplicate exception. Bucket already exists
+    }
+
+
+    // add single election if multi field not set, else add bulk
     let electionUnixTime = electionDate.getTime(); debug('election unix time: ', electionUnixTime);
     if (!body.multi?.includeAllValues) { // add single election
         debug('will add single election');
