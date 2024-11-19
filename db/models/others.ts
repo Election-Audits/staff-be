@@ -73,10 +73,10 @@ const candidateSchema = new Schema({
 });
 
 // create a unique index for party
-candidateSchema.index({electionId: 1, party: 1},
-    { // TODO: investigate index not being set
+candidateSchema.index({electionId: 1, partyId: 1},
+    {
         unique: true, //sparse: true, 
-        //partialFilterExpression: { partyId: {$type: 'string'} } // , $ne: ''
+        partialFilterExpression: { partyId: {$type: 'string'} } // , $ne: ''
     }
 );
 

@@ -34,7 +34,6 @@ let emailPassword: string;
 
 async function setup() {
     await checkSecretsReturned();
-    // TODO: get EMAIL_USER and EMAIL_PASSWORD from Infisical
     // get emailUser from environment in local build, Infisical in cloud build
     emailUser = (BUILD == BUILD_TYPES.local) ? emailUserEnv+'' : secrets.EMAIL_USER;
     emailPassword = (BUILD == BUILD_TYPES.local) ? emailPasswordEnv+'' : secrets.EMAIL_PASSWORD;

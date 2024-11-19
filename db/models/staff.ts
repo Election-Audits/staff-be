@@ -19,7 +19,7 @@ async function setup() {
         if (db != auditDbName) continue;
         // now setup eaudit database for staff app
         staffModel = databaseConns[db].model<StaffDocument, mongoose.PaginateModel<StaffDocument> >
-        ("Staff", staffSchema, "Staff"); // TODO: eaudit -> [db]
+        ("Staff", staffSchema, "Staff");
     }
     
 }

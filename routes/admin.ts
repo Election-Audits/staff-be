@@ -108,10 +108,6 @@ passport.authenticate('data-master-cookie', {session: false}),
 
 /*
 Add a polling agent (pre-approval) at the highest electoral levels: ('country' or 'region')
-TODO: how to add supervisor agents for independent candidates: either create a dummy party for ind. cand. and
-set this partyId when adding agent, or accept candidateId as an input, then add function to get independent
-candidates to add to options when creating polling agents
-Prefer option 2
 */
 router.post('/agent',
 passport.authenticate('data-master-cookie', {session: false}),

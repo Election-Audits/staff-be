@@ -91,7 +91,7 @@ interface PollAgentData {
     subAgentsRef: string, // reference to subAgents/supervisees document
     //
     electoralLevel: string,
-    electoralAreaId: string, // TODO: allow multiple?
+    electoralAreaId: string,
     electoralAreaName: string,
     //
     partyId: string,

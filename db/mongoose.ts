@@ -8,7 +8,7 @@ import { secrets, checkSecretsReturned } from "../utils/infisical";
 
 // set connection string depending on whether it's a local or cloud build
 const protocol = (BUILD == BUILD_TYPES.local) ? 'mongodb' : 'mongodb+srv';
-const mongoUrlBase = (BUILD == BUILD_TYPES.local) ? '127.0.0.1:27017' : ''; // TODO: set cloud urls
+const mongoUrlBase = (BUILD == BUILD_TYPES.local) ? '127.0.0.1:27017' : '';
 
 export let eAuditMongoUrl = ''; // general 'eaudit' db assign in setup
 export let databaseConns: {[key: string]: mongoose.Connection}  = {}; // database connections

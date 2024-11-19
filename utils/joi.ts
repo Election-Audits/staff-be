@@ -4,7 +4,6 @@ const debug = require('debug')('ea:joi');
 debug.log = console.log.bind(console);
 import * as Joi from "joi";
 
-// TODO: validate vs validateAsync
 
 // reused validation fields
 const email = Joi.string().email().min(3).max(30);
@@ -119,6 +118,7 @@ export const objectIdSchema = Joi.object({
 export const postCandidateSchema = Joi.object({
     electionId: Joi.string().alphanum().max(30),
     partyId: Joi.string().alphanum().max(30).allow(""),
+    candidateId: Joi.string().alphanum().max(30).allow(""),
     surname: Joi.string().max(50),
     otherNames: Joi.string().max(100),
     // title: Joi.string().max(30), // todo

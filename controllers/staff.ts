@@ -38,7 +38,7 @@ export async function getElectoralLevels(req: Request, res: Response, next: Next
 export async function postElectoralArea(req: Request, res: Response, next: NextFunction) {
     // check input
     let body = req.body;
-    let { error } = await electoralAreaSchema.validate(body);
+    let { error } = await electoralAreaSchema.validateAsync(body);
     if (error) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
@@ -80,10 +80,13 @@ export async function postElectoralAreaBulk(req: Request, res: Response, next: N
     // validate contents of excel document. columns matching
     let filePath = path.join(filesDir, req.myFileName);
     let sheetData = await getDataFromExcel(filePath);
+
     const requiredColumns = ['name', 'level', 'parentLevelName'];
     let { numHeaders, expectedHeaderMap } = await validateExcel(sheetData, requiredColumns);
     let dataArr = iterateDataRows(sheetData, numHeaders, expectedHeaderMap); // await
     await checkDuplicatesElectoralAreaBulk(dataArr);
+    // TODO: ensure parent electoral areas exist
+
     // transform each data element to match database schema (add fields)
     // TODO: special consideration if adding regions
     dataArr = dataArr.map((el)=>{
@@ -132,7 +135,7 @@ async function checkDuplicatesElectoralAreaBulk(rowsArray: {[key: string]: any}[
  */
 export async function getElectoralArea(req: Request, res: Response, next: NextFunction) {
     // check input
-    let { error } = await getElectoralAreaSchema.validate(req.params);
+    let { error } = await getElectoralAreaSchema.validateAsync(req.params);
     if (error) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
@@ -152,7 +155,7 @@ export async function getElectoralArea(req: Request, res: Response, next: NextFu
  */
 export async function getElections(req: Request, res: Response, next: NextFunction) {
     // check input
-    let { error } = await getElectionsSchema.validate(req.query);
+    let { error } = await getElectionsSchema.validateAsync(req.query);
     if (error) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
@@ -177,7 +180,7 @@ export async function getElections(req: Request, res: Response, next: NextFuncti
  */
 export async function getOneElection(req: Request, res: Response, next: NextFunction) {
     // check input
-    let { error } = await getOneElectionSchema.validate(req.params);
+    let { error } = await getOneElectionSchema.validateAsync(req.params);
     if (error) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
@@ -196,7 +199,7 @@ export async function getOneElection(req: Request, res: Response, next: NextFunc
  */
 export async function postParty(req: Request, res: Response, next: NextFunction) {
     // check input
-    let { error } = await postPartySchema.validate(req.body);
+    let { error } = await postPartySchema.validateAsync(req.body);
     if (error) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
@@ -226,7 +229,7 @@ export async function getParties(req: Request, res: Response, next: NextFunction
  */
 export async function getOneParty(req: Request, res: Response, next: NextFunction) {
     // check input
-    let { error } = await objectIdSchema.validate(req.params);
+    let { error } = await objectIdSchema.validateAsync(req.params);
     if (error) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
@@ -245,14 +248,14 @@ export async function getOneParty(req: Request, res: Response, next: NextFunctio
  */
 export async function updateParty(req: Request, res: Response, next: NextFunction) {
     // check param input
-    let { error } = await objectIdSchema.validate(req.params);
+    let { error } = await objectIdSchema.validateAsync(req.params);
     if (error) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
     }
 
     // check body input
-    let { error: bodyError } = await postPartySchema.validate(req.body);
+    let { error: bodyError } = await postPartySchema.validateAsync(req.body);
     if (bodyError) {
         debug('schema error: ', bodyError);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
