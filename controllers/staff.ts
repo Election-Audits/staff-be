@@ -6,9 +6,9 @@ import { electoralAreaModel } from "../db/models/electoral-area";
 import { electionModel } from "../db/models/election";
 import { Request, Response, NextFunction } from "express";
 import { electoralAreaSchema, getElectoralAreaSchema, getElectionsSchema, getOneElectionSchema, postPartySchema,
-objectIdSchema, postCandidateSchema, getCandidatesSchema } from "../utils/joi";
+objectIdSchema, postCandidateSchema, getCandidatesSchema, bulkElectoralAreaSchema } from "../utils/joi";
 import { saveExcelDoc, getDataFromExcel, validateExcel, iterateDataRows } from "./files";
-import { filesDir, pageLimit, getQueryNumberWithDefault } from "../utils/misc";
+import { filesDir, pageLimit, getQueryNumberWithDefault, getElectoralLevels } from "../utils/misc";
 import * as path from "path";
 import { pollAgentModel } from "../db/models/poll-agent";
 
@@ -21,7 +21,7 @@ import { pollAgentModel } from "../db/models/poll-agent";
  * @param res 
  * @param next 
  */
-export async function getElectoralLevels(req: Request, res: Response, next: NextFunction) {
+export async function getElectoralLevelsRequest(req: Request, res: Response, next: NextFunction) {
     let record = await electoralLevelsModel.findOne();
     debug('electoral level record: ', record);
     let levels = record?.levels.map((lvl)=> lvl.name) || [];
@@ -80,17 +80,34 @@ export async function postElectoralAreaBulk(req: Request, res: Response, next: N
     // validate contents of excel document. columns matching
     let filePath = path.join(filesDir, req.myFileName);
     let sheetData = await getDataFromExcel(filePath);
+    debug('req body: ', req.body);
 
-    const requiredColumns = ['name', 'level', 'parentLevelName'];
+    // input checks
+    let body = req.body;
+    let { error } = bulkElectoralAreaSchema.validate(body);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+    // ensure level specified is an electoral level
+    let electoralLevels = getElectoralLevels();
+    if (!electoralLevels.includes(body.level)) {
+        debug('level specified is not an electoral level');
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+    const requiredColumns = ['name', 'parentLevelName']; // , 'level'
     let { numHeaders, expectedHeaderMap } = await validateExcel(sheetData, requiredColumns);
-    let dataArr = iterateDataRows(sheetData, numHeaders, expectedHeaderMap); // await
+    let dataArr = iterateDataRows(sheetData, numHeaders, expectedHeaderMap);
     await checkDuplicatesElectoralAreaBulk(dataArr);
     // TODO: ensure parent electoral areas exist
 
     // transform each data element to match database schema (add fields)
-    // TODO: special consideration if adding regions
     dataArr = dataArr.map((el)=>{
         el.nameLowerCase = el.name.toLowerCase();
+        el.level = body.level;
+        el.parentLevelName = el.parentLevelName.toLowerCase();
         return el;
     });
     // perform a bulk write to database
@@ -111,12 +128,13 @@ async function checkDuplicatesElectoralAreaBulk(rowsArray: {[key: string]: any}[
         // also write in data map to ensure no duplicates in data
         let parentNameLowerCase = rowObj.parentLevelName?.toLowerCase();
         let myNameLowerCase = rowObj.name.toLowerCase();
+        let indexVal = rowObj.code +'_'+ myNameLowerCase; // code, name used for uniqueness
         // init parentLevelName store of electoral areas if doesn't exist
         if (!dataMap[parentNameLowerCase]) dataMap[parentNameLowerCase] = {}; // toLowerCase?
-        if (dataMap[parentNameLowerCase][myNameLowerCase]) { // record already exists
-            duplicates.push(rowObj.name);
+        if (dataMap[parentNameLowerCase][indexVal]) { // record already exists
+            duplicates.push(`${rowObj.code}, ${rowObj.name}; `);
         }
-        dataMap[parentNameLowerCase][myNameLowerCase] = rowObj; // add row object to data map
+        dataMap[parentNameLowerCase][indexVal] = rowObj; // add row object to data map
     }
     //
     // reject with error if there is duplicate data in excel sheet

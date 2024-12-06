@@ -56,8 +56,8 @@ export const electoralLevelsSchema = Joi.object({
 
 // electoral areas
 export const electoralAreaSchema = Joi.object({
-    name: Joi.string().max(100),
-    level: Joi.string().max(50),
+    name: Joi.string().max(100).required(),
+    level: Joi.string().max(50).required(),
     parentLevelName: Joi.string().max(100),
     parentLevelId: Joi.string().max(30),
     location: {
@@ -65,6 +65,11 @@ export const electoralAreaSchema = Joi.object({
         lat: Joi.number()
     },
     locationDetails: Joi.string()
+});
+
+// bulk electoral areas
+export const bulkElectoralAreaSchema = Joi.object({
+    level: Joi.string().max(50).required(),
 });
 
 

@@ -33,8 +33,7 @@ const SchemaTypes = mongoose.SchemaTypes;
 const electoralAreaSchema = new Schema({
     name: SchemaTypes.String, // e.g Tema Central
     nameLowerCase: { 
-        type: SchemaTypes.String,
-        unique: true
+        type: SchemaTypes.String
     },
     level: {
         type: SchemaTypes.String, // e.g. constituency
@@ -51,11 +50,13 @@ const electoralAreaSchema = new Schema({
         lon: SchemaTypes.Number,
         lat: SchemaTypes.Number
     },
-    locationDetails: SchemaTypes.String
+    locationDetails: SchemaTypes.String,
+    code: SchemaTypes.String // optional, unique code possibly provided by electoral commission
 });
 
 // create a text index to enable search by text
 // electoralAreaSchema.index({nameLowerCase: 'text'}); TODO: use elasticsearch or similar service instead
+electoralAreaSchema.index({code: 1, nameLowerCase: 1}, {unique: true}); // if code is null, require uniqueness on name
 
 /////////////////
 interface ElectoralAreaData {

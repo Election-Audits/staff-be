@@ -12,7 +12,7 @@ import cookieParser from "cookie-parser";
 import { secrets , checkSecretsReturned } from "../utils/infisical";
 import { BUILD_TYPES } from "shared-lib/constants";
 import { staffSession } from "../utils/session";
-import { getElectoralLevels, postElectoralArea, postElectoralAreaBulk, getElectoralArea, getElections, getOneElection,
+import { getElectoralLevelsRequest, postElectoralArea, postElectoralAreaBulk, getElectoralArea, getElections, getOneElection,
 postParty, getParties, getOneParty, updateParty, postCandidate, updateCandidate, getAgent, getCandidates } 
 from "../controllers/staff";
 import multer from "multer";
@@ -49,7 +49,7 @@ router.get('/electoral-levels',
 passport.authenticate('staff-cookie', {session: false}),
 (req,res,next)=>{
     debug('received request to GET /electoral-levels...');
-    getElectoralLevels(req,res,next)
+    getElectoralLevelsRequest(req,res,next)
     .then((data)=>{
         return res.status(200).send(data);
     })
