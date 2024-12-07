@@ -3,7 +3,7 @@
 import * as mongoose from "mongoose";
 const debug = require('debug')('ea:elect-area-model');
 debug.log = console.log.bind(console);
-import { databaseConns, checkDatabaseConnected } from "../mongoose";
+import { databaseConns, checkDatabaseConnected, auditDbName } from "../mongoose";
 import { DBS } from "../../utils/env"
 import paginate from "mongoose-paginate-v2";
 
@@ -16,7 +16,7 @@ async function setup() {
     let dbs = DBS?.split(",") || [];
     // create models for each database (by country/entity)
     for (let db of dbs) {
-        if (db == 'eaudit') continue;
+        if (db == auditDbName) continue;
         // setup electoralAreaModel
         electoralAreaModel = databaseConns[db].model
         <ElectoralAreaDocument, mongoose.PaginateModel<ElectoralAreaDocument> >
@@ -33,8 +33,7 @@ const SchemaTypes = mongoose.SchemaTypes;
 const electoralAreaSchema = new Schema({
     name: SchemaTypes.String, // e.g Tema Central
     nameLowerCase: { 
-        type: SchemaTypes.String,
-        unique: true
+        type: SchemaTypes.String
     },
     level: {
         type: SchemaTypes.String, // e.g. constituency
@@ -51,11 +50,13 @@ const electoralAreaSchema = new Schema({
         lon: SchemaTypes.Number,
         lat: SchemaTypes.Number
     },
-    locationDetails: SchemaTypes.String
+    locationDetails: SchemaTypes.String,
+    code: SchemaTypes.String // optional, unique code possibly provided by electoral commission
 });
 
 // create a text index to enable search by text
 // electoralAreaSchema.index({nameLowerCase: 'text'}); TODO: use elasticsearch or similar service instead
+electoralAreaSchema.index({code: 1, nameLowerCase: 1}, {unique: true}); // if code is null, require uniqueness on name
 
 /////////////////
 interface ElectoralAreaData {

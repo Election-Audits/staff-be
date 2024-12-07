@@ -17,7 +17,7 @@ import * as XLSX from "xlsx";
 
 const maxFileSize = 20e6; // 20 MB
 
-
+const ignoreListColumn0 = ['#']; // ignore excel row if it starts with any of these
 
 /**
  * Save an excel document to file system
@@ -55,7 +55,7 @@ const storage = multer.diskStorage({
         cb(null, dir);
     },
     filename: (req, file, cb)=>{
-        debug('filename cb. file: ', file);
+        // debug('filename cb. file: ', file);
         let allowedExtensions = req.myAllowedExts;
         //let ext = file.mimetype.split('/')[1]; //file extension
         let nameParts = file.originalname.split('.');
@@ -69,6 +69,36 @@ const storage = multer.diskStorage({
         return cb(null, fileName);
     }
 });
+
+
+/**
+ * temporarily save images, e.g logo of political parties before uploading to s3
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function saveImage(req: Request, res: Response, next: NextFunction) {
+    // set variables to be used in multer callbacks
+    req.myFileDir = filesDir;
+    req.myAllowedExts = ['png', 'jpeg', 'jpg'];
+    // ensure that the directory exists before writing file to it
+    await ensureDirExists(filesDir);
+    // upload/save file
+    await new Promise<void>((resolve, reject)=>{
+        multer({storage, limits: {fileSize: maxFileSize}})
+        .fields([{name: 'image'}])
+        (req,res, (err)=>{
+            if (err) {
+                debug('multer err: ', err);
+                return reject(err);
+            }
+            //
+            resolve();
+        });
+    });
+}
+
+/// ------------------   Excel functions below
 
 
 /**
@@ -159,6 +189,8 @@ function getRowData(startCell: string, worksheet: XLSX.WorkSheet, expectedNumCol
         continueCondition = expectedNumColumns ? (numElements < expectedNumColumns) : cellData;
     } while (continueCondition && curCellLetter); //  
     // NB: curCellLetter null check in while condition to ensure logic in body uses right type
+    // if expectedNumColumns is null, remove last 'undefined' member
+    if (!expectedNumColumns) data = data.filter((x, i)=> i< data.length-1);
     return data;
 }
 
@@ -223,6 +255,9 @@ function getNextLetterInRow(curLetter: string) {
  */
 export function iterateDataRows(worksheet: XLSX.WorkSheet, expectedNumColumns: number, 
     expectedHeaderMap: {[key: string]: number}) {
+    // get header data
+    let headers = getRowData(startCell, worksheet, null); debug('headers: ', headers);
+
     // split cell name to letter and number
     let [startCellLetter, startCellNumber] = splitCellName(startCell);
     let curRowNumber = startCellNumber + 1;
@@ -233,9 +268,17 @@ export function iterateDataRows(worksheet: XLSX.WorkSheet, expectedNumColumns: n
     let continueCondition;
     const infiniteBound = 1e6; // upper bound to guard against infinite loop
     let numRows = 0;
+    //const startTime = Date.now();
     do {
         let startCellTmp = startCellLetter + curRowNumber;
         let rowData = getRowData(startCellTmp, worksheet, expectedNumColumns);
+        // ignore row if it contains forbidden characters
+        if (ignoreListColumn0.includes(rowData[0])) {
+            // debug('ignoring row: ', rowData);
+            curRowNumber++;
+            continue;
+        }
+
         // check if this row is missing data
         let { isMissingData, numMissingColumns } = checkRowMissingData(rowData, expectedHeaderMap);
         // debug(`numMissingColumns: ${numMissingColumns}`);
@@ -245,12 +288,19 @@ export function iterateDataRows(worksheet: XLSX.WorkSheet, expectedNumColumns: n
         }
         // transform the row data into an object keyed by column name
         let rowObj : {[key: string]: any} = {};
-        for (let header of expectedHeaders) {
-            let ind = expectedHeaderMap[header];
+        //for (let header of expectedHeaders) {
+        for (let ind=0; ind<headers.length; ind++) {
+            //let ind = expectedHeaderMap[header];
+            let header = headers[ind];
             rowObj[header] = rowData[ind]; 
         }
         // debug('row object: ', rowObj);
         if (!isMissingData) dataArray.push(rowObj);
+        // if (numRows % 100 == 0) {
+        //     let timeElapsed = (Date.now() - startTime); // /1000; // seconds
+        //     debug(`numRows done: ${numRows}, time Elapsed: ${Math.round(timeElapsed)} ms`);
+        // }
+
         //
         continueCondition = numMissingColumns < numExpectedHeaders;
         numRows++;

@@ -6,13 +6,25 @@ import { electoralAreaModel } from "../db/models/electoral-area";
 import { electionModel } from "../db/models/election";
 import { Request, Response, NextFunction } from "express";
 import { electoralAreaSchema, getElectoralAreaSchema, getElectionsSchema, getOneElectionSchema, postPartySchema,
-objectIdSchema, postCandidateSchema, getCandidatesSchema } from "../utils/joi";
+objectIdSchema, postCandidateSchema, getCandidatesSchema, bulkElectoralAreaSchema } from "../utils/joi";
 import { saveExcelDoc, getDataFromExcel, validateExcel, iterateDataRows } from "./files";
-import { filesDir, pageLimit, getQueryNumberWithDefault } from "../utils/misc";
+import { filesDir, pageLimit, getQueryNumberWithDefault, getElectoralLevels, s3client } from "../utils/misc";
+import { COUNTRY } from "../utils/env";
 import * as path from "path";
 import { pollAgentModel } from "../db/models/poll-agent";
+import { saveImage } from "./files";
+import { PutObjectCommand  } from "@aws-sdk/client-s3";
+import * as util from "util";
+import * as fs from "fs";
+import multer from "multer";
 
 
+const readFileAsync = util.promisify(fs.readFile);
+
+const maxFileSize = 5e6;
+// const memoryStorage = multer.memoryStorage(); // store small files like logo before sending to S3
+// const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback)=>{
+// }
 
 
 /**
@@ -21,7 +33,7 @@ import { pollAgentModel } from "../db/models/poll-agent";
  * @param res 
  * @param next 
  */
-export async function getElectoralLevels(req: Request, res: Response, next: NextFunction) {
+export async function getElectoralLevelsRequest(req: Request, res: Response, next: NextFunction) {
     let record = await electoralLevelsModel.findOne();
     debug('electoral level record: ', record);
     let levels = record?.levels.map((lvl)=> lvl.name) || [];
@@ -38,7 +50,7 @@ export async function getElectoralLevels(req: Request, res: Response, next: Next
 export async function postElectoralArea(req: Request, res: Response, next: NextFunction) {
     // check input
     let body = req.body;
-    let { error } = await electoralAreaSchema.validate(body);
+    let { error } = await electoralAreaSchema.validateAsync(body);
     if (error) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
@@ -80,14 +92,34 @@ export async function postElectoralAreaBulk(req: Request, res: Response, next: N
     // validate contents of excel document. columns matching
     let filePath = path.join(filesDir, req.myFileName);
     let sheetData = await getDataFromExcel(filePath);
-    const requiredColumns = ['name', 'level', 'parentLevelName'];
+    debug('req body: ', req.body);
+
+    // input checks
+    let body = req.body;
+    let { error } = bulkElectoralAreaSchema.validate(body);
+    if (error) {
+        debug('schema error: ', error);
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+    // ensure level specified is an electoral level
+    let electoralLevels = getElectoralLevels();
+    if (!electoralLevels.includes(body.level)) {
+        debug('level specified is not an electoral level');
+        return Promise.reject({errMsg: i18next.t("request_body_error")});
+    }
+
+    const requiredColumns = ['name', 'parentLevelName']; // , 'level'
     let { numHeaders, expectedHeaderMap } = await validateExcel(sheetData, requiredColumns);
-    let dataArr = iterateDataRows(sheetData, numHeaders, expectedHeaderMap); // await
+    let dataArr = iterateDataRows(sheetData, numHeaders, expectedHeaderMap);
     await checkDuplicatesElectoralAreaBulk(dataArr);
+    // TODO: ensure parent electoral areas exist
+
     // transform each data element to match database schema (add fields)
-    // TODO: special consideration if adding regions
     dataArr = dataArr.map((el)=>{
         el.nameLowerCase = el.name.toLowerCase();
+        el.level = body.level;
+        el.parentLevelName = el.parentLevelName.toLowerCase();
         return el;
     });
     // perform a bulk write to database
@@ -108,12 +140,13 @@ async function checkDuplicatesElectoralAreaBulk(rowsArray: {[key: string]: any}[
         // also write in data map to ensure no duplicates in data
         let parentNameLowerCase = rowObj.parentLevelName?.toLowerCase();
         let myNameLowerCase = rowObj.name.toLowerCase();
+        let indexVal = rowObj.code +'_'+ myNameLowerCase; // code, name used for uniqueness
         // init parentLevelName store of electoral areas if doesn't exist
         if (!dataMap[parentNameLowerCase]) dataMap[parentNameLowerCase] = {}; // toLowerCase?
-        if (dataMap[parentNameLowerCase][myNameLowerCase]) { // record already exists
-            duplicates.push(rowObj.name);
+        if (dataMap[parentNameLowerCase][indexVal]) { // record already exists
+            duplicates.push(`${rowObj.code}, ${rowObj.name}; `);
         }
-        dataMap[parentNameLowerCase][myNameLowerCase] = rowObj; // add row object to data map
+        dataMap[parentNameLowerCase][indexVal] = rowObj; // add row object to data map
     }
     //
     // reject with error if there is duplicate data in excel sheet
@@ -132,7 +165,7 @@ async function checkDuplicatesElectoralAreaBulk(rowsArray: {[key: string]: any}[
  */
 export async function getElectoralArea(req: Request, res: Response, next: NextFunction) {
     // check input
-    let { error } = await getElectoralAreaSchema.validate(req.params);
+    let { error } = await getElectoralAreaSchema.validateAsync(req.params);
     if (error) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
@@ -152,7 +185,7 @@ export async function getElectoralArea(req: Request, res: Response, next: NextFu
  */
 export async function getElections(req: Request, res: Response, next: NextFunction) {
     // check input
-    let { error } = await getElectionsSchema.validate(req.query);
+    let { error } = await getElectionsSchema.validateAsync(req.query);
     if (error) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
@@ -177,7 +210,7 @@ export async function getElections(req: Request, res: Response, next: NextFuncti
  */
 export async function getOneElection(req: Request, res: Response, next: NextFunction) {
     // check input
-    let { error } = await getOneElectionSchema.validate(req.params);
+    let { error } = await getOneElectionSchema.validateAsync(req.params);
     if (error) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
@@ -196,11 +229,33 @@ export async function getOneElection(req: Request, res: Response, next: NextFunc
  */
 export async function postParty(req: Request, res: Response, next: NextFunction) {
     // check input
-    let { error } = await postPartySchema.validate(req.body);
+    let { error } = await postPartySchema.validateAsync(req.body);
     if (error) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
     }
+
+    let body = req.body;
+    // save image
+    await saveImage(req, res, next); // save logo locally
+    let filePath = path.join(filesDir, req.myFileName); debug('filePath: ', filePath);
+    let fileData = await readFileAsync(filePath);
+    let fileNameSplit = req.myFileName.split('.'); // eg. '1.png' returns ['1', 'png']
+    let ext = fileNameSplit[fileNameSplit.length-1]; //extension 'png' in '1.png'
+    // await new Promise((resolve,reject)=>{
+    //     multer({storage: memoryStorage, fileFilter: ()})
+    // });
+
+    // put in s3
+    await s3client.send(new PutObjectCommand({
+        Bucket: 'eaudit', // bucket for general data like party logo
+        Key: `logo-${COUNTRY}-${body.initials}`,
+        Body: fileData,
+        ACL: 'public-read',
+        Metadata: {ext}
+    }));
+
+    // TODO: delete local file after putting in S3
     //
     await partyModel.create(req.body);
 }
@@ -226,7 +281,7 @@ export async function getParties(req: Request, res: Response, next: NextFunction
  */
 export async function getOneParty(req: Request, res: Response, next: NextFunction) {
     // check input
-    let { error } = await objectIdSchema.validate(req.params);
+    let { error } = await objectIdSchema.validateAsync(req.params);
     if (error) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
@@ -245,14 +300,14 @@ export async function getOneParty(req: Request, res: Response, next: NextFunctio
  */
 export async function updateParty(req: Request, res: Response, next: NextFunction) {
     // check param input
-    let { error } = await objectIdSchema.validate(req.params);
+    let { error } = await objectIdSchema.validateAsync(req.params);
     if (error) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
     }
 
     // check body input
-    let { error: bodyError } = await postPartySchema.validate(req.body);
+    let { error: bodyError } = await postPartySchema.validateAsync(req.body);
     if (bodyError) {
         debug('schema error: ', bodyError);
         return Promise.reject({errMsg: i18next.t("request_body_error")});

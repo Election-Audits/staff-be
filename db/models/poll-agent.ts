@@ -3,7 +3,7 @@
 import * as mongoose from "mongoose";
 const debug = require('debug')('ea:pollagent-model');
 debug.log = console.log.bind(console);
-import { databaseConns, checkDatabaseConnected } from "../mongoose";
+import { databaseConns, checkDatabaseConnected, auditDbName } from "../mongoose";
 import { DBS } from "../../utils/env"
 import paginate from "mongoose-paginate-v2";
 
@@ -14,10 +14,13 @@ check db connection, then create model using db connection
 async function setup() {
     await checkDatabaseConnected();
     let dbs = DBS?.split(",") || [];
-    //
-    // now setup eaudit database for Poll Agents
-    pollAgentModel = databaseConns.eaudit.model<PollAgentDocument, mongoose.PaginateModel<PollAgentDocument> >
-    ("PollAgent", pollAgentSchema, "PollAgents");
+    for (let db of dbs) {
+        if (db != auditDbName) continue;
+        // audit db
+        // now setup eaudit database for Poll Agents
+        pollAgentModel = databaseConns[db].model<PollAgentDocument, mongoose.PaginateModel<PollAgentDocument> >
+        ("PollAgent", pollAgentSchema, "PollAgents");
+    }
 }
 setup();
 
@@ -88,7 +91,7 @@ interface PollAgentData {
     subAgentsRef: string, // reference to subAgents/supervisees document
     //
     electoralLevel: string,
-    electoralAreaId: string, // TODO: allow multiple?
+    electoralAreaId: string,
     electoralAreaName: string,
     //
     partyId: string,

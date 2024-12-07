@@ -3,7 +3,7 @@ const debug = require('debug')('ea:ctrl-admin');
 debug.log = console.log.bind(console);
 import i18next from "i18next";
 import { staffModel } from "../db/models/staff";
-import { electoralLevelsModel } from "../db/models/others";
+import { electoralLevelsModel, partyModel, candidateModel } from "../db/models/others";
 import { electionModel } from "../db/models/election";
 import { electoralAreaModel } from "../db/models/electoral-area";
 import { pollAgentModel } from "../db/models/poll-agent";
@@ -11,6 +11,8 @@ import { getStaffByIdSchema, electoralLevelsSchema, postElectionSchema, postPoll
 putPollAgentSchema } from "../utils/joi";
 import { getJoiError } from "shared-lib/backend/misc";
 import * as mongoose from "mongoose";
+import { getElectoralLevels, s3client } from "../utils/misc";
+import { CreateBucketCommand } from "@aws-sdk/client-s3";
 
 
 
@@ -55,7 +57,7 @@ function getQueryNumberWithDefault(queryIn: unknown) : number {
  */
 export async function getStaffById(req: Request, res: Response, next: NextFunction) {
     // check param input
-    let { error } = await getStaffByIdSchema.validate(req.params);
+    let { error } = await getStaffByIdSchema.validateAsync(req.params);
     if (error) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
@@ -79,7 +81,7 @@ export async function getStaffById(req: Request, res: Response, next: NextFuncti
  */
 export async function createElectoralLevels(req: Request, res: Response, next: NextFunction) {
     // check input
-    let { error } = await electoralLevelsSchema.validate(req.body);
+    let { error } = await electoralLevelsSchema.validateAsync(req.body);
     if (error) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
@@ -149,7 +151,7 @@ export async function createElectoralLevels(req: Request, res: Response, next: N
 export async function postElection(req: Request, res: Response, next: NextFunction) {
     // check input
     let body = req.body;
-    let { error } = await postElectionSchema.validate(body);
+    let { error } = await postElectionSchema.validateAsync(body);
     if (error) {
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
@@ -157,23 +159,41 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
 
     // check if there's already an upcoming election of this type, for this electoralAreaId
     let { type, electoralAreaId } = body;
-    let dateNow = new Date().toISOString();
-    let filter = { type, electoralAreaId, date: {$gte: dateNow} };
+    //let dateNow = new Date().toISOString(); //debug('dateNow: ', dateNow);
+    let dateNow = Date.now();
+    let filter = { type, electoralAreaId, unixTimeMs: {$gte: dateNow} }; //debug('filter: ', filter);
     let existElections = await electionModel.find(filter);
-    debug('existElections: ', existElections);
+    //debug('existElections: ', existElections);
     if (existElections.length > 0) {
         return Promise.reject({errMsg: i18next.t('entity_already_exists')});
     }
 
+    // ensure s3 bucket is created for storing election result documents. bucket name e.g ghana-2024
+    let electionDate = new Date(body.date); //.toISOString();
+    let topElectLevel = getElectoralLevels()[0]; // country
+    let electAreaFilter = {level: topElectLevel};
+    let topLevelElectArea = await electoralAreaModel.findOne(electAreaFilter);
+    let bucketName = topLevelElectArea?.nameLowerCase +'-'+ electionDate.getFullYear();
+    debug(`bucketName: ${bucketName}`);
+    // try to create s3 bucket
+    try {
+        let createParams = {Bucket: bucketName};
+        await s3client.send(new CreateBucketCommand(createParams));
+    } catch (exc) {
+        debug('create bucket exc: ', exc); // .BucketAlreadyExists
+        // ignore duplicate exception. Bucket already exists
+    }
+
     // add single election if multi field not set, else add bulk
-    let electionDate = new Date(body.date).toISOString();
+    let electionUnixTime = electionDate.getTime(); //debug('election unix time: ', electionUnixTime);
     if (!body.multi?.includeAllValues) { // add single election
         debug('will add single election');
         body.multi = undefined; // not saving multi to db
-        body.date = electionDate; //
-        // add name of electoral area
+        body.date = electionDate.toISOString();
+        body.unixTimeMs = electionUnixTime;
+        // add name of electoral area. todo: investigate if needed since only getting name from query
         let electoralArea = await electoralAreaModel.findById(body.electoralAreaId);
-        body.electoralAreaName = electoralArea?.name;
+        body.electoralAreaName = electoralArea?.name; //debug('rec to save: ', body);
         await electionModel.create(body);
         return;
     }
@@ -185,10 +205,9 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
     // At each level, pick the value and pick all sub electoral areas under it (i.e with parentLevelName 
     // equal this value)
     let multi = body.multi;
-    let electoralLevelsRec = await electoralLevelsModel.findOne();
-    let electoralLevels = electoralLevelsRec?.levels || [];
-    let startLevelInd = electoralLevels.findIndex((val)=> val.name == multi.electoralLevel );
-    let endLevelInd = electoralLevels.findIndex((val)=> val.name == body.electoralLevel);
+    let electoralLevels = getElectoralLevels();
+    let startLevelInd = electoralLevels.findIndex((lvl)=> lvl == multi.electoralLevel );
+    let endLevelInd = electoralLevels.findIndex((lvl)=> lvl == body.electoralLevel);
     if (startLevelInd == -1 || endLevelInd == -1) {
         return Promise.reject({errMsg: i18next.t('request_body_error')});
     }
@@ -200,7 +219,7 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
     // values at current level known, start from next one
     for (let levelInd= startLevelInd+1; levelInd<= endLevelInd; levelInd++) {
         // debug(`levelInd: ${levelInd}`);
-        let level = electoralLevels[levelInd].name; // debug(`level: ${level}`);
+        let level = electoralLevels[levelInd]; //.name; // debug(`level: ${level}`);
         let filter = {level, parentLevelName: {$in: curElectoralValues}};
         electoralAreas = await electoralAreaModel.find(filter);
         // update curElectoralValues so can be used as parentLevelName in next iteration
@@ -214,13 +233,16 @@ export async function postElection(req: Request, res: Response, next: NextFuncti
     let electionArray = electoralAreas.map((electArea)=>{
         let electData = {
             type: body.type,
-            date: electionDate,
+            date: electionDate.toISOString(),
+            unixTimeMs: electionUnixTime,
             electoralLevel: electArea.level,
-            electoralAreaId: electArea._id,
+            electoralAreaId: electArea._id.toString(),
             electoralAreaName: electArea.name
         };
         return electData;
     });
+    debug('electionArray: ', electionArray);
+
     // save to database
     await electionModel.collection.insertMany(electionArray);
 }
@@ -241,7 +263,19 @@ export async function postAgent(req: Request, res: Response, next: NextFunction)
         return Promise.reject({errMsg: i18next.t("request_body_error")});
     }
 
-    // TODO: ensure existence of party with partyId, or candidate with candidateId
+    // ensure existence of party with partyId, or candidate with candidateId
+    if (body.partyId) {
+        let party = await partyModel.findById(body.partyId);
+        if (!party) {
+            return Promise.reject({errMsg: i18next.t("party_not_exist")});
+        }
+    }
+    if (body.candidateId) {
+        let candidate = await candidateModel.findById(body.candidateId);
+        if (!candidate) {
+            return Promise.reject({errMsg: i18next.t("candidate_not_exist")});
+        }
+    }
 
     // create record for pre-approving poll agent
     await pollAgentModel.create(body);

@@ -4,7 +4,6 @@ const debug = require('debug')('ea:joi');
 debug.log = console.log.bind(console);
 import * as Joi from "joi";
 
-// TODO: validate vs validateAsync
 
 // reused validation fields
 const email = Joi.string().email().min(3).max(30);
@@ -57,8 +56,8 @@ export const electoralLevelsSchema = Joi.object({
 
 // electoral areas
 export const electoralAreaSchema = Joi.object({
-    name: Joi.string().max(100),
-    level: Joi.string().max(50),
+    name: Joi.string().max(100).required(),
+    level: Joi.string().max(50).required(),
     parentLevelName: Joi.string().max(100),
     parentLevelId: Joi.string().max(30),
     location: {
@@ -66,6 +65,11 @@ export const electoralAreaSchema = Joi.object({
         lat: Joi.number()
     },
     locationDetails: Joi.string()
+});
+
+// bulk electoral areas
+export const bulkElectoralAreaSchema = Joi.object({
+    level: Joi.string().max(50).required(),
 });
 
 
@@ -119,6 +123,7 @@ export const objectIdSchema = Joi.object({
 export const postCandidateSchema = Joi.object({
     electionId: Joi.string().alphanum().max(30),
     partyId: Joi.string().alphanum().max(30).allow(""),
+    candidateId: Joi.string().alphanum().max(30).allow(""),
     surname: Joi.string().max(50),
     otherNames: Joi.string().max(100),
     // title: Joi.string().max(30), // todo
