@@ -58,6 +58,8 @@ const staffSchema = new Schema({
     ),
 });
 
+staffSchema.index({roles: 1}); // for searches made for staff without assigned roles
+
 
 /////////////////
 interface StaffData {

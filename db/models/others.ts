@@ -76,7 +76,7 @@ const candidateSchema = new Schema({
 candidateSchema.index({electionId: 1, partyId: 1},
     {
         unique: true, //sparse: true, 
-        partialFilterExpression: { partyId: {$type: 'string'} } // , $ne: ''
+        partialFilterExpression: { partyId: {$type: 'string', $ne: ''} } 
     }
 );
 

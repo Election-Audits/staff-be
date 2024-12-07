@@ -37,8 +37,7 @@ const electoralAreaSchema = new Schema({
     },
     level: {
         type: SchemaTypes.String, // e.g. constituency
-        required: true,
-        index: true
+        required: true
     },
     parentLevelId: {
         type: SchemaTypes.String, // id of Greater Accra region
@@ -56,7 +55,12 @@ const electoralAreaSchema = new Schema({
 
 // create a text index to enable search by text
 // electoralAreaSchema.index({nameLowerCase: 'text'}); TODO: use elasticsearch or similar service instead
+electoralAreaSchema.index({level: 1});
 electoralAreaSchema.index({code: 1, nameLowerCase: 1}, {unique: true}); // if code is null, require uniqueness on name
+electoralAreaSchema.index({parentLevelName: 1});
+electoralAreaSchema.index({parentLevelId: 1});
+electoralAreaSchema.index({nameLowerCase: 1});
+
 
 /////////////////
 interface ElectoralAreaData {

@@ -7,6 +7,7 @@ import { databaseConns, checkDatabaseConnected, auditDbName } from "../mongoose"
 import { DBS } from "../../utils/env"
 import paginate from "mongoose-paginate-v2";
 
+// mongoose.set('debug', true);
 
 /*
 check db connection, then create model using db connection
@@ -34,15 +35,7 @@ const SchemaTypes = mongoose.SchemaTypes;
 const pollAgentSchema = new Schema({
     surname: SchemaTypes.String,
     otherNames: SchemaTypes.String,
-    email: {
-        type: SchemaTypes.String,
-        //unique: true,
-        index: {
-            unique: true,
-            partialFilterExpression: { email: { $type: 'string' } },
-        },
-        sparse: true
-    },
+    email: SchemaTypes.String,
     phone: SchemaTypes.String,
     password: SchemaTypes.String,
     otpCodes: [
@@ -67,9 +60,13 @@ const pollAgentSchema = new Schema({
     }, {strict: false})
 });
 
-// pollAgentSchema.index({email: 1}, 
-//     {unique: true, partialFilterExpression: {email: {$exists: true, $gt: ''}} }
-// );
+pollAgentSchema.index({email: 1}, 
+    {unique: true, partialFilterExpression: {email: {$type: 'string', $ne: ''}} }
+);
+
+pollAgentSchema.index({phone: 1}, 
+    {unique: true, partialFilterExpression: {phone: {$type: 'string', $ne: ''}} }
+);
 
 ////////////////////
 interface PollAgentData {
@@ -111,3 +108,11 @@ pollAgentSchema.plugin(paginate); // use paginate plugin
 export let pollAgentModel = mongoose.model<PollAgentDocument, mongoose.PaginateModel<PollAgentDocument> >
 ("PollAgent", pollAgentSchema, "PollAgents");
 
+
+pollAgentModel.on('index', function(err) {
+    if (err) {
+        console.error('PollAgents index error: %s', err);
+    } else {
+        console.info('PollAgents indexing complete');
+    }
+});
