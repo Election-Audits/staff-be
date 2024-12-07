@@ -8,11 +8,23 @@ import { Request, Response, NextFunction } from "express";
 import { electoralAreaSchema, getElectoralAreaSchema, getElectionsSchema, getOneElectionSchema, postPartySchema,
 objectIdSchema, postCandidateSchema, getCandidatesSchema, bulkElectoralAreaSchema } from "../utils/joi";
 import { saveExcelDoc, getDataFromExcel, validateExcel, iterateDataRows } from "./files";
-import { filesDir, pageLimit, getQueryNumberWithDefault, getElectoralLevels } from "../utils/misc";
+import { filesDir, pageLimit, getQueryNumberWithDefault, getElectoralLevels, s3client } from "../utils/misc";
+import { COUNTRY } from "../utils/env";
 import * as path from "path";
 import { pollAgentModel } from "../db/models/poll-agent";
+import { saveImage } from "./files";
+import { PutObjectCommand  } from "@aws-sdk/client-s3";
+import * as util from "util";
+import * as fs from "fs";
+import multer from "multer";
 
 
+const readFileAsync = util.promisify(fs.readFile);
+
+const maxFileSize = 5e6;
+// const memoryStorage = multer.memoryStorage(); // store small files like logo before sending to S3
+// const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback)=>{
+// }
 
 
 /**
@@ -222,6 +234,28 @@ export async function postParty(req: Request, res: Response, next: NextFunction)
         debug('schema error: ', error);
         return Promise.reject({errMsg: i18next.t("request_body_error")});
     }
+
+    let body = req.body;
+    // save image
+    await saveImage(req, res, next); // save logo locally
+    let filePath = path.join(filesDir, req.myFileName); debug('filePath: ', filePath);
+    let fileData = await readFileAsync(filePath);
+    let fileNameSplit = req.myFileName.split('.'); // eg. '1.png' returns ['1', 'png']
+    let ext = fileNameSplit[fileNameSplit.length-1]; //extension 'png' in '1.png'
+    // await new Promise((resolve,reject)=>{
+    //     multer({storage: memoryStorage, fileFilter: ()})
+    // });
+
+    // put in s3
+    await s3client.send(new PutObjectCommand({
+        Bucket: 'eaudit', // bucket for general data like party logo
+        Key: `logo-${COUNTRY}-${body.initials}`,
+        Body: fileData,
+        ACL: 'public-read',
+        Metadata: {ext}
+    }));
+
+    // TODO: delete local file after putting in S3
     //
     await partyModel.create(req.body);
 }

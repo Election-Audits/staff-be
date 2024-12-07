@@ -72,6 +72,36 @@ const storage = multer.diskStorage({
 
 
 /**
+ * temporarily save images, e.g logo of political parties before uploading to s3
+ * @param req 
+ * @param res 
+ * @param next 
+ */
+export async function saveImage(req: Request, res: Response, next: NextFunction) {
+    // set variables to be used in multer callbacks
+    req.myFileDir = filesDir;
+    req.myAllowedExts = ['png', 'jpeg', 'jpg'];
+    // ensure that the directory exists before writing file to it
+    await ensureDirExists(filesDir);
+    // upload/save file
+    await new Promise<void>((resolve, reject)=>{
+        multer({storage, limits: {fileSize: maxFileSize}})
+        .fields([{name: 'image'}])
+        (req,res, (err)=>{
+            if (err) {
+                debug('multer err: ', err);
+                return reject(err);
+            }
+            //
+            resolve();
+        });
+    });
+}
+
+/// ------------------   Excel functions below
+
+
+/**
  * Extract data from data-containing sheet in an excel file. 
  * @param filePath 
  * @returns 

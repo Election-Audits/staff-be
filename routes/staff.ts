@@ -141,7 +141,6 @@ Add a political party
 */
 router.post('/party',
 passport.authenticate('staff-cookie', {session: false}),
-multer().none(),
 (req,res,next)=>{
     debug('received request to POST /party...');
     postParty(req,res,next)
