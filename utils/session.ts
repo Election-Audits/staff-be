@@ -4,7 +4,7 @@ import session from "express-session";
 import MongoStore from "connect-mongo";
 import { COOKIE_SECRET as cookieSecretEnv, BUILD } from "./env";
 import { BUILD_TYPES } from "shared-lib/constants";
-import { eAuditMongoUrl } from "../db/mongoose";
+import { checkDatabaseConnected, getAuditMongoUrl } from "../db/mongoose";
 import { staffCookieMaxAge } from "./misc";
 import { secrets, checkSecretsReturned } from "./infisical";
 
@@ -29,12 +29,13 @@ export let staffSession = session({
 Obtain cookie secret from Infisical in cloud builds
 */
 async function setup() {
-    await checkSecretsReturned(); // ensure secrets returned from Infisical
-    let cookieSecret = BUILD == BUILD_TYPES.local ? cookieSecretEnv+'' : secrets.COOKIE_SECRET+'';
     // create store with updated eAuditMongoUrl
-    // debug(`eAuditMongoUrl: ${eAuditMongoUrl}, cookieSecret: ${cookieSecret}, cookieMaxAge: ${staffCookieMaxAge}`);
+    // debug(`eAuditMongoUrl: ${eAuditMongoUrl}, cookieMaxAge: ${staffCookieMaxAge}`);
+    let cookieSecret = cookieSecretEnv+''; // debug('cookie secret: ', cookieSecret);
+    await checkDatabaseConnected(); // ensure eaudit mongourl set (done after db connection)
+    let mongoUrl = getAuditMongoUrl(); // debug('mongoUrl: ', mongoUrl);
     const store = MongoStore.create({
-        mongoUrl: eAuditMongoUrl,
+        mongoUrl: mongoUrl,
         // dbName: auditDbName // NB: dbName set in connection string
         stringify: false,
         collectionName: 'sessionsStaff'

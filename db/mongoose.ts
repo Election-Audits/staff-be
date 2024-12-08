@@ -13,6 +13,10 @@ const mongoUrlBase = (BUILD == BUILD_TYPES.local) ? '127.0.0.1:27017' : '';
 export let eAuditMongoUrl = ''; // general 'eaudit' db assign in setup
 export let databaseConns: {[key: string]: mongoose.Connection}  = {}; // database connections
 
+export function getAuditMongoUrl() {
+    return eAuditMongoUrl;
+}
+
 
 // audit db holds User and session collections. Either eaudit, 'eaudit-test',...
 let dbs = DBS?.split(',') || [];
